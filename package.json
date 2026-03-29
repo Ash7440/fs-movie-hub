@@ -1,0 +1,26 @@
+{
+  "name": "fs-movie-hub",
+  "version": "1.0.0",
+  "description": "![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)",
+  "homepage": "https://github.com/Ash7440/fs-movie-hub#readme",
+  "bugs": {
+    "url": "https://github.com/Ash7440/fs-movie-hub/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ash7440/fs-movie-hub.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
