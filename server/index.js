@@ -1,7 +1,10 @@
 const express = require('express')
-const fs = require('fs')
+const fs = require('fs').promises
 const path = require('path')
 const cors = require('cors')
+const fetch = require('node-fetch')
+const HttpsProxyAgent = require('https-proxy-agent')
+require('dotenv').config()
 
 const app = express()
 
@@ -10,20 +13,69 @@ app.use(express.json())
 
 const MOVIES_DIR = path.join(__dirname, '..', 'downloads')
 
-app.get('/api/movies', (req, res) => {
-  fs.readdir(MOVIES_DIR, (err, files) => {
-    if (err) {
-      console.error('Unable to read files', err)
-      return res.status(500).json({ error: 'Unable to read files' })
-    }
-
+app.get('/api/movies', async (req, res) => {
+  try {
+    const files = await fs.readdir(MOVIES_DIR); // Теперь это можно "ждать"
+    
     const videoFiles = files.filter(file => {
       const ext = path.extname(file).toLowerCase()
       return ['.mp4', '.mkv', '.avi', '.mov'].includes(ext)
     })
+    
+    const moviesWithPosters = await Promise.all(
+      videoFiles.map(async (file) => {
+        const query = file
+          .replace(/\.[^/.]+$/, '') // убираем расширение
+          .replace(/[._-]/g, ' ')   // точки/тире в пробелы
+          .replace(/\s+/g, ' ')     // убираем двойные пробелы
+          // Убираем год (4 цифры подряд) и всё, что после него
+          .replace(/\b(19|20)\d{2}\b.*/, '')
+          // Убираем технический мусор и скобки
+          .replace(/(1080p|720p|BDRip|WEB-DL|x264|x265|HEVC|SOFCJ|[\[\]()]).*/i, '') 
+          .trim();
 
-    res.json(videoFiles)
-  })
+        console.log('Final Query:', query)
+        
+        try {
+          const agent = new HttpsProxyAgent('http://127.0.0.1:8080')
+          const encodedQuery = encodeURIComponent(query)
+          const url = `https://api.themoviedb.org/3/search/movie?query=${encodedQuery}&include_adult=true&language=en-US&page=1`
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'accept': 'application/json',
+              'Authorization': `Bearer ${process.env.TMDB_TOKEN}`
+            },
+            agent: agent,
+          })
+
+          if (!response.ok) {
+            // Если здесь ошибка, мы увидим её в консоли
+            console.log(`TMDB Error Status: ${response.status} for file: ${file}`)
+            throw new Error('TMDB_FETCH_FAILED')
+          }
+
+          const arrMovies = await response.json()
+          const data = arrMovies?.results?.[0] || null
+
+          return {
+            name: file,
+            poster: data ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : null,
+            overview: data ? data.overview : 'Описание отсутствует'
+          };
+        } catch (apiErr) {
+          console.error(`Ошибка API для файла ${file}:`, apiErr.message)
+          return { name: file, poster: null }
+        }
+      })
+    );
+
+    res.json(moviesWithPosters);
+  } catch (err) {
+    console.error('Global Error:', err)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
 })
 
 app.get('/api/video/:filename', (req, res) => {
@@ -71,7 +123,6 @@ app.get('/api/video/:filename', (req, res) => {
   }
 })
 
-const PORT = 3001
-app.listen(PORT, () => {
-  console.log(`server run on port: ${PORT}`)
+app.listen(process.env.PORT, () => {
+  console.log(`server run on port: ${process.env.PORT}`)
 })
