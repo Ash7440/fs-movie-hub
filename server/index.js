@@ -1,5 +1,6 @@
 const express = require('express')
 const fs = require('fs').promises
+const fsSync = require('fs')
 const path = require('path')
 const cors = require('cors')
 const fetch = require('node-fetch')
@@ -61,6 +62,7 @@ app.get('/api/movies', async (req, res) => {
 
           return {
             name: file,
+            title: query,
             poster: data ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : null,
             overview: data ? data.overview : 'Описание отсутствует'
           };
@@ -82,11 +84,11 @@ app.get('/api/video/:filename', (req, res) => {
   const fileName = req.params.filename
   const videoPath = path.join(MOVIES_DIR, fileName)
 
-  if (!fs.existsSync(videoPath)) {
+  if (!fsSync.existsSync(videoPath)) {
     return res.status(404).send('film not found')
   }
 
-  const stat = fs.statSync(videoPath)
+  const stat = fsSync.statSync(videoPath)
   const fileSize = stat.size
   const range = req.headers.range
 
@@ -101,7 +103,7 @@ app.get('/api/video/:filename', (req, res) => {
     }
 
     const chunksize = (end - start) + 1
-    const file = fs.createReadStream(videoPath, { start, end })
+    const file = fsSync.createReadStream(videoPath, { start, end })
 
     const head = {
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
@@ -119,7 +121,7 @@ app.get('/api/video/:filename', (req, res) => {
       'Accept-Ranges': 'bytes',
     }
     res.writeHead(200, head)
-    fs.createReadStream(videoPath).pipe(res)
+    fsSync.createReadStream(videoPath).pipe(res)
   }
 })
 
