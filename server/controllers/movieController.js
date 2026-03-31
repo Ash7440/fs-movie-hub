@@ -5,51 +5,61 @@ const path = require('path')
 const fetch = require('node-fetch')
 const movieHelper = require('../utils/movieHelper')
 const tmdbConfig = require('../config/tmdb')
+const Movie = require('../models/movie')
 
 const moviesDir = path.join(process.cwd(), '..', process.env.MOVIES_DIR || 'downloads')
 
 const getMovies = async (req, res) => {
   try {
+    const allFiles = await fs.readdir(moviesDir)
 
-    const files = await fs.readdir(moviesDir) // Теперь это можно "ждать"
-    
-    const videoFiles = files.filter(file => {
+    // 1. Сначала фильтруем только видео
+    const videoFiles = allFiles.filter(file => {
       const ext = path.extname(file).toLowerCase()
       return ['.mp4', '.mkv', '.avi', '.mov'].includes(ext)
     })
-  
-    const moviesWithPosters = await Promise.all(
-      videoFiles.map(async (file) => {
-        const query = movieHelper.cleanMovieName(file)
-        console.log('Final Query:', query)
 
-        try {
-          const encodedQuery = encodeURIComponent(query)
-          const url = `https://api.themoviedb.org/3/search/movie?query=${encodedQuery}&include_adult=true&language=en-US&page=1`
+    // 2. Обрабатываем каждый файл
+    const moviesWithData = await Promise.all(videoFiles.map(async (file) => {
+      try {
+        let movie = await Movie.findOne({ fileName: file })
 
-          const response = await fetch(url, tmdbConfig())
+        // Если фильма нет в базе — идем в TMDB
+        if (!movie) {
+          console.log(`New movie found: ${file}. Fetching metadata...`)
+          const query = movieHelper.cleanMovieName(file)
+          
+          const response = await fetch(
+            `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=1`, 
+            tmdbConfig()
+          )
 
-          if (!response.ok) {
-            console.log(`TMDB Error Status: ${response.status} for file: ${file}`)
-            throw new Error('TMDB_FETCH_FAILED')
-          }
+          if (!response.ok) throw new Error('TMDB_FETCH_FAILED')
 
           const arrMovies = await response.json()
-          const data = arrMovies?.results?.[0] || null
-          
-          return {
-            name: file,
-            title: query,
-            poster: data ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : null,
-            overview: data ? data.overview : 'Описание отсутствует'
-          }
-        } catch (apiErr) {
-          console.error(`Ошибка API для файла ${file}:`, apiErr.message)
-          return { name: file, poster: null }
+          const data = arrMovies?.results?.[0]
+
+          // Создаем новую запись (только если данные найдены, иначе ставим заглушки)
+          movie = new Movie({
+            fileName: file,
+            title: data?.title || query,
+            tmdbId: data?.id || null,
+            posterPath: data?.poster_path || null,
+            overview: data?.overview || 'Описание отсутствует',
+            releaseDate: data?.release_date || null
+          })
+
+          await movie.save()
         }
-      })
-    )
-    res.json(moviesWithPosters)
+
+        return movie
+      } catch (fileErr) {
+        console.error(`Error processing file ${file}:`, fileErr.message)
+        return { fileName: file, title: 'Error loading data', posterPath: null }
+      }
+    }))
+
+    res.json(moviesWithData)
   } catch (err) {
     console.error('Global Error:', err)
     res.status(500).json({ error: 'Internal Server Error' })

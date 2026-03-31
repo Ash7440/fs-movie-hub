@@ -11,10 +11,6 @@ const movieSchema = new mongoose.Schema({
   posterPath: String,
   overview: String,
   releaseDate: String,
-  filePath: {
-    type: String,
-    required: true
-  },
   addedAt: {
     type: Date,
     default: Date.now
