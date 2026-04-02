@@ -48,9 +48,9 @@ const MovieGallery = ({ movies }) => {
   return (
     <ul style={styles.gridContainer}>
       {movies.map((movie) => (
-        <li key={movie.name}>
+        <li key={movie.fileName}>
           <Link 
-            to={`/watch/${encodeURIComponent(movie.name)}`} 
+            to={`/movies/${encodeURIComponent(movie.fileName)}`} 
             style={styles.card}
             // Эффект увеличения при наведении (можно добавить через обычный CSS)
             onMouseEnter={(e) => {
@@ -64,7 +64,7 @@ const MovieGallery = ({ movies }) => {
           >
             <div style={styles.imageWrapper}>
               <img
-                src={movie.poster || 'https://via.placeholder.com/200x300?text=No+Poster'}
+                src={movie.fullPosterUrl || 'https://via.placeholder.com/200x300?text=No+Poster'}
                 alt={movie.title}
                 style={styles.image}
                 loading="lazy"
@@ -81,7 +81,7 @@ const MovieGallery = ({ movies }) => {
 }
 
 const VideoPlayer = ({ movie }) => {
-  const url = `http://localhost:3001/api/video/${movie.name}`
+  const url = `http://localhost:3001/api/movies/${movie.fileName}`
 
   return (
     <div>
@@ -117,15 +117,15 @@ const App = () => {
     fetchMovies()
   }, [])
 
-  const match = useMatch('/watch/:filename')
-  const movie = match ? movies.find(movie => movie.name === match.params.filename) : null
+  const match = useMatch('/movies/:filename')
+  const movie = match ? movies.find(movie => movie.fileName === match.params.filename) : null
 
   return (
     <div>
       <h2>Home Cinema</h2>
       <Routes>
         <Route path='/' element={<MovieGallery movies={movies} />} />
-        <Route path='/watch/:filename' element={<VideoPlayer movie={movie} />} />
+        <Route path='/movies/:filename' element={<VideoPlayer movie={movie} />} />
       </Routes>
     </div>
   )

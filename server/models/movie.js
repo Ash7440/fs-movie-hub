@@ -17,7 +17,15 @@ const movieSchema = new mongoose.Schema({
   }
 })
 
+movieSchema.virtual('fullPosterUrl').get(function() {
+  if (!this.posterPath) return null
+
+  const size = 'w500'
+  return `http://image.tmdb.org/t/p/${size}${this.posterPath}`
+})
+
 movieSchema.set('toJSON', {
+  virtuals: true,
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()
     delete returnedObject._id
