@@ -99,7 +99,7 @@ const MovieGallery = ({ movies }) => {
 const VideoPlayer = ({ movie }) => {
   if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>;
 
-  const url = `http://localhost:3001/api/movies/${movie.fileName}`
+  const url = `http://localhost:3001/api/movies/${movie.playFile}`
   
   const styles = {
     container: {

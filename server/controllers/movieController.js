@@ -58,7 +58,7 @@ const getMovies = async (req, res) => {
         const mp4Name = `${pureName}.mp4`
         const isReady = convertedFiles.includes(mp4Name)
 
-        const movieObj = movie.toObject()
+        const movieObj = movie.toObject({ virtuals: true })
 
         movieObj.status = isReady ? 'ready' : 'processing'
         movieObj.playFile = mp4Name
