@@ -2,6 +2,7 @@ const chokidar = require('chokidar')
 const ffmpeg = require('fluent-ffmpeg')
 const path = require('path')
 const fs = require('fs')
+const conversionEvents = require('./events')
 
 // 1. Используем абсолютный путь через process.cwd() или проверяем __dirname
 const moviesDir = path.resolve(__dirname, '../../downloads')
@@ -34,7 +35,7 @@ const processNext = () => {
   isProcessing = true
   const { filePath, targetPath, fileName, fileExt } = processingQueue.shift()
 
-  console.log(`\n🎬 Начинаю работу над: ${fileName}${fileExt}`)
+  console.log(`\nНачинаю работу над: ${fileName}${fileExt}`)
   
   let command = ffmpeg(filePath)
 
@@ -64,15 +65,37 @@ const processNext = () => {
        console.log('Команда FFmpeg:', cmd) // Это поможет увидеть, что реально выполняется
     })
     .on('progress', (p) => {
-      // При copy процент может быть неточным, ориентируйся на скорость появления лога Готово
-      process.stdout.write(`\rОбработка [${fileName}]: ${Math.round(p.percent || 0)}% (скорость: ${p.currentFps} fps)`)
+      const percent = Math.round(p.percent || 0)
+        // 2. ОТПРАВЛЯЕМ ДАННЫЕ В ШИНУ
+        // Важно: имя файла должно совпадать с тем, что в базе (без расширения), 
+        // чтобы фронтенд понял, к какой карточке относится этот процент.
+        conversionEvents.emit('progress', { 
+        fileName: fileName, // Это имя без расширения (pureName)
+        percent: percent,
+        status: 'processing'
+      })
+
+      process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
     })
     .on('end', () => {
+      conversionEvents.emit('progress', { 
+        fileName: fileName, 
+        percent: 100, 
+        status: 'done' 
+      })
+
       console.log(`\nГотово: ${fileName}.mp4`)
       isProcessing = false
       processNext()
     })
     .on('error', (err) => {
+
+      conversionEvents.emit('progress', { 
+        fileName: fileName, 
+        status: 'error',
+        message: err.message 
+      })
+      
       console.error(`\nОшибка FFmpeg (${fileName}):`, err.message)
       isProcessing = false
       processNext()
