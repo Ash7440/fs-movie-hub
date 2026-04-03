@@ -6,6 +6,7 @@ const fetch = require('node-fetch')
 const movieHelper = require('../utils/movieHelper')
 const tmdbConfig = require('../config/tmdb')
 const Movie = require('../models/movie')
+const conversionEvents = require('../utils/events')
 
 const moviesDir = path.join(process.cwd(), '..', process.env.MOVIES_DIR || 'downloads')
 const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
@@ -127,4 +128,21 @@ const streamVideo = (req, res) => {
   }
 }
 
-module.exports = { getMovies, streamVideo }
+const getStatus = (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Content-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+
+  const onProgress = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  conversionEvents.on('progress', onProgress)
+
+  req.on('close', () => {
+    conversionEvents.removeListener('progress', onProgress)
+    res.end()
+  })
+}
+
+module.exports = { getMovies, streamVideo, getStatus }
