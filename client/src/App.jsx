@@ -151,6 +151,8 @@ const VideoPlayer = ({ movie }) => {
 
 const App = () => {
   const [movies, setMovies] = useState([])
+  const [conversionProgress, setConversionProgress] = useState({})
+
   const baseUrl = 'http://localhost:3001'
 
   useEffect(() => {
@@ -170,6 +172,41 @@ const App = () => {
     }
     fetchMovies()
   }, [])
+
+  useEffect(() => {
+    const eventSource = new EventSource(`${baseUrl}/api/status`)
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        console.log('SSE Update:', data)
+
+        setConversionProgress(prev => ({
+          ...prev,
+          [data.fileName]: data.percent
+        }))
+
+        if (data.status === 'done') {
+          setTimeout(() => {
+            fetch(`${baseUrl}/api/movies`)
+              .then(res => res.json())
+              .then(data => setMovies(data))
+          }, 1000)
+        } 
+      } catch (err) {
+        console.error('Failed to parse SSE:', err)
+      }
+    }
+
+    eventSource.onerror = (err) => {
+      console.error('SSE error', err)
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [baseUrl])
 
   const match = useMatch('/movies/:filename')
   const movie = match ? movies.find(m => m.fileName === match.params.filename) : null
