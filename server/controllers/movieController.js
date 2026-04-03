@@ -8,10 +8,12 @@ const tmdbConfig = require('../config/tmdb')
 const Movie = require('../models/movie')
 
 const moviesDir = path.join(process.cwd(), '..', process.env.MOVIES_DIR || 'downloads')
+const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
 
 const getMovies = async (req, res) => {
   try {
     const allFiles = await fs.readdir(moviesDir)
+    const convertedFiles = await fs.readdir(convertedDir)
 
     // 1. Сначала фильтруем только видео
     const videoFiles = allFiles.filter(file => {
@@ -52,7 +54,16 @@ const getMovies = async (req, res) => {
           await movie.save()
         }
 
-        return movie
+        const pureName = path.basename(file, path.extname(file))
+        const mp4Name = `${pureName}.mp4`
+        const isReady = convertedFiles.includes(mp4Name)
+
+        const movieObj = movie.toObject()
+
+        movieObj.status = isReady ? 'ready' : 'processing'
+        movieObj.playFile = mp4Name
+
+        return movieObj
       } catch (fileErr) {
         console.error(`Error processing file ${file}:`, fileErr.message)
         return { fileName: file, title: 'Error loading data', posterPath: null }
@@ -69,7 +80,7 @@ const getMovies = async (req, res) => {
 const streamVideo = (req, res) => {
   try {
     const fileName = req.params.filename
-    const videoPath = path.join(moviesDir, fileName)
+    const videoPath = path.join(convertedDir, fileName)
     
     if (!fsSync.existsSync(videoPath)) {
       return res.status(404).send('film not found')
