@@ -11,88 +11,165 @@ const theme = {
   fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 }
 
-const MovieGallery = ({ movies }) => {
-  const styles = {
-    gridContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-      gap: '25px',
-      padding: '40px 20px',
-      maxWidth: '1200px',
-      margin: '0 auto',
-      listStyle: 'none',
-    },
-    card: {
-      backgroundColor: theme.cardBg,
-      borderRadius: '12px',
-      overflow: 'hidden',
-      transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-      cursor: 'pointer',
-      textDecoration: 'none',
-      color: theme.textMain,
-      display: 'flex',
-      flexDirection: 'column',
-      border: '1px solid #222',
-      position: 'relative',
-    },
-    imageWrapper: {
-      width: '100%',
-      aspectRatio: '2/3',
-      overflow: 'hidden',
-      backgroundColor: '#222',
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-    },
-    info: {
-      padding: '12px',
-      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-    },
-    title: {
-      fontSize: '0.95rem',
-      fontWeight: '600',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      margin: 0,
+const MovieGallery = ({ movies, conversionProgress }) => {
+  // CSS для анимаций
+  const appleStyles = `
+    @keyframes shimmer {
+      0% { transform: translateY(120%); }
+      100% { transform: translateY(-120%); }
     }
-  }
+
+    .poster-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: #111;
+      overflow: hidden;
+    }
+
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: filter 1.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s ease;
+    }
+
+    /* Когда фильм в обработке — он ЧБ и темный */
+    .is-processing {
+      filter: grayscale(1) brightness(0.4);
+    }
+
+    /* Когда готов — становится цветным */
+    .is-ready {
+      filter: grayscale(0) brightness(1);
+    }
+
+    /* Эффект блика Apple */
+    .shimmer-layer {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.08),
+        transparent
+      );
+      animation: shimmer 3s infinite linear;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Контейнер для текста прогресса */
+    .progress-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 3;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    .percent-text {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* Тонкая линия прогресса снизу */
+    .progress-bar-mini {
+      position: absolute;
+      bottom: 0; left: 0; height: 4px;
+      background: #e50914;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px #e50914;
+      z-index: 4;
+    }
+  `
 
   return (
-    <ul style={styles.gridContainer}>
-      {movies.map((movie) => (
-        <li key={movie.fileName}>
-          <Link 
-            to={`/movies/${encodeURIComponent(movie.fileName)}`} 
-            style={styles.card}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-10px)';
-              e.currentTarget.style.boxShadow = '0 15px 30px rgba(0,0,0,0.8)';
-              e.currentTarget.style.borderColor = theme.accent;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = '#222';
-            }}
-          >
-            <div style={styles.imageWrapper}>
-              <img
-                src={movie.fullPosterUrl || 'https://via.placeholder.com/300x450?text=No+Poster'}
-                alt={movie.title}
-                style={styles.image}
-                loading="lazy"
-              />
-            </div>
-            <div style={styles.info}>
-              <p style={styles.title} title={movie.title}>{movie.title}</p>
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+      gap: '30px',
+      padding: '40px',
+      maxWidth: '1300px',
+      margin: '0 auto'
+    }}>
+      <style>{appleStyles}</style>
+      
+      {movies.map((movie) => {
+        // Убираем расширение, чтобы найти прогресс по имени
+        const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
+        const livePercent = conversionProgress[pureName] || 0
+        
+        // Фильм считается в обработке, если его статус "processing" ИЛИ если проценты > 0 и < 100
+        const isProcessing = movie.status === 'processing' || (livePercent > 0 && livePercent < 100)
+        
+        return (
+          <div key={movie.fileName} style={{ position: 'relative' }}>
+            <Link 
+              to={isProcessing ? '#' : `/movies/${encodeURIComponent(movie.playFile)}`}
+              style={{ 
+                textDecoration: 'none', 
+                color: 'white',
+                cursor: isProcessing ? 'default' : 'pointer'
+              }}
+            >
+              <div className="poster-container" style={{
+                borderRadius: '12px',
+                border: `1px solid ${isProcessing ? '#333' : '#222'}`,
+                transition: 'border-color 0.3s'
+              }}>
+                
+                {/* 1. Слой с бликом (только при конвертации) */}
+                {isProcessing && <div className="shimmer-layer" />}
+
+                {/* 2. Текст с процентами */}
+                {isProcessing && (
+                  <div className="progress-overlay">
+                    <span className="percent-text">{livePercent}%</span>
+                    <span style={{ fontSize: '0.6rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      Optimizing
+                    </span>
+                  </div>
+                )}
+
+                {/* 3. Мини прогресс-бар внизу карточки */}
+                {isProcessing && (
+                  <div className="progress-bar-mini" style={{ width: `${livePercent}%` }} />
+                )}
+
+                {/* 4. Само изображение */}
+                <img 
+                  src={movie.fullPosterUrl || 'https://via.placeholder.com/300x450?text=No+Poster'} 
+                  alt={movie.title}
+                  className={`poster-img ${isProcessing ? 'is-processing' : 'is-ready'}`}
+                />
+              </div>
+
+              {/* Заголовок */}
+              <div style={{ marginTop: '12px' }}>
+                <h4 style={{ 
+                  margin: 0, 
+                  fontSize: '0.9rem', 
+                  whiteSpace: 'nowrap', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis',
+                  opacity: isProcessing ? 0.5 : 1
+                }}>
+                  {movie.title}
+                </h4>
+              </div>
+            </Link>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -174,7 +251,7 @@ const App = () => {
   }, [])
 
   useEffect(() => {
-    const eventSource = new EventSource(`${baseUrl}/api/status`)
+    const eventSource = new EventSource(`${baseUrl}/api/movies/status`)
 
     eventSource.onmessage = (event) => {
       try {
@@ -209,7 +286,7 @@ const App = () => {
   }, [baseUrl])
 
   const match = useMatch('/movies/:filename')
-  const movie = match ? movies.find(m => m.fileName === match.params.filename) : null
+  const movie = match ? movies.find(m => m.playFile === match.params.filename) : null
 
   const headerStyle = {
     padding: '20px 40px',
@@ -229,7 +306,7 @@ const App = () => {
       </header>
 
       <Routes>
-        <Route path='/' element={<MovieGallery movies={movies} />} />
+        <Route path='/' element={<MovieGallery movies={movies} conversionProgress={conversionProgress} />} />
         <Route path='/movies/:filename' element={<VideoPlayer movie={movie} />} />
       </Routes>
     </div>
