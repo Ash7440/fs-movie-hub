@@ -3,5 +3,6 @@ const movieController = require('../controllers/movieController')
 
 router.get('/', movieController.getMovies)
 router.get('/:filename', movieController.streamVideo)
+router.get('/status', movieController.getStatus)
 
 module.exports = router
