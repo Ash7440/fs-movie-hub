@@ -91,7 +91,7 @@ const MovieGallery = ({ movies, conversionProgress }) => {
     }
   `
 
-  return (
+ return (
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
@@ -103,52 +103,57 @@ const MovieGallery = ({ movies, conversionProgress }) => {
       <style>{appleStyles}</style>
       
       {movies.map((movie) => {
-        // Убираем расширение, чтобы найти прогресс по имени
-        const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
-        const livePercent = conversionProgress[pureName] || 0
+        console.log(movie)
+        const pureName = movie.fileName.replace(/\.[^/.]+$/, "");
+        const sseKeys = Object.keys(conversionProgress);
+        const matchedKey = sseKeys.find(key => 
+          pureName === key || pureName.includes(key) || key.includes(pureName)
+        );
         
-        // Фильм считается в обработке, если его статус "processing" ИЛИ если проценты > 0 и < 100
-        const isProcessing = movie.status === 'processing' || (livePercent > 0 && livePercent < 100)
+        const livePercent = matchedKey ? conversionProgress[matchedKey] : 0;
         
+        const showAsReady = movie.status === 'ready'
+        const finalIsProcessing = !showAsReady;
+
         return (
           <div key={movie.fileName} style={{ position: 'relative' }}>
             <Link 
-              to={isProcessing ? '#' : `/movies/${encodeURIComponent(movie.playFile)}`}
+              // Если в процессе — ссылка неактивна, если готов — ведем в плеер
+              to={finalIsProcessing? '#' : `/movies/${encodeURIComponent(movie.playFile)}`}
               style={{ 
                 textDecoration: 'none', 
                 color: 'white',
-                cursor: isProcessing ? 'default' : 'pointer'
+                cursor: finalIsProcessing ? 'default' : 'pointer'
               }}
             >
               <div className="poster-container" style={{
                 borderRadius: '12px',
-                border: `1px solid ${isProcessing ? '#333' : '#222'}`,
+                border: `1px solid ${finalIsProcessing ? '#333' : '#222'}`,
                 transition: 'border-color 0.3s'
               }}>
                 
-                {/* 1. Слой с бликом (только при конвертации) */}
-                {isProcessing && <div className="shimmer-layer" />}
-
-                {/* 2. Текст с процентами */}
-                {isProcessing && (
-                  <div className="progress-overlay">
-                    <span className="percent-text">{livePercent}%</span>
-                    <span style={{ fontSize: '0.6rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      Optimizing
-                    </span>
-                  </div>
+                {/* 1. Слой с бликом и оверлеем (показываем, пока НЕ готов) */}
+                {finalIsProcessing && (
+                  <>
+                    <div className="shimmer-layer" />
+                    <div className="progress-overlay">
+                      {/* Если процентов еще нет (0), пишем "Waiting", если есть — число */}
+                      <span className="percent-text">{livePercent > 0 ? `${livePercent}%` : '...'}</span>
+                      <span style={{ fontSize: '0.6rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Optimizing
+                      </span>
+                    </div>
+                    {/* Мини прогресс-бар внизу карточки */}
+                    <div className="progress-bar-mini" style={{ width: `${livePercent}%` }} />
+                  </>
                 )}
 
-                {/* 3. Мини прогресс-бар внизу карточки */}
-                {isProcessing && (
-                  <div className="progress-bar-mini" style={{ width: `${livePercent}%` }} />
-                )}
-
-                {/* 4. Само изображение */}
+                {/* 2. Само изображение */}
                 <img 
                   src={movie.fullPosterUrl || 'https://via.placeholder.com/300x450?text=No+Poster'} 
                   alt={movie.title}
-                  className={`poster-img ${isProcessing ? 'is-processing' : 'is-ready'}`}
+                  // Класс меняется строго по нашей новой логике
+                  className={`poster-img ${finalIsProcessing ? 'is-processing' : 'is-ready'}`}
                 />
               </div>
 
@@ -160,7 +165,9 @@ const MovieGallery = ({ movies, conversionProgress }) => {
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 
                   textOverflow: 'ellipsis',
-                  opacity: isProcessing ? 0.5 : 1
+                  // Приглушаем текст, если фильм еще не готов
+                  opacity: finalIsProcessing ? 0.4 : 1,
+                  transition: 'opacity 0.5s'
                 }}>
                   {movie.title}
                 </h4>
@@ -268,7 +275,7 @@ const App = () => {
             fetch(`${baseUrl}/api/movies`)
               .then(res => res.json())
               .then(data => setMovies(data))
-          }, 1000)
+          }, 5000)
         } 
       } catch (err) {
         console.error('Failed to parse SSE:', err)

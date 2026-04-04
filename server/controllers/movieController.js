@@ -55,14 +55,14 @@ const getMovies = async (req, res) => {
           await movie.save()
         }
 
-        const pureName = path.basename(file, path.extname(file))
-        const mp4Name = `${pureName}.mp4`
-        const isReady = convertedFiles.includes(mp4Name)
+        const movieObj = movie.toObject({ virtuals: true });
+        const pureName = path.basename(file, path.extname(file));
+        movieObj.playFile = `${pureName}.mp4`;
 
-        const movieObj = movie.toObject({ virtuals: true })
-
-        movieObj.status = isReady ? 'ready' : 'processing'
-        movieObj.playFile = mp4Name
+        // Если в базе УЖЕ написано 'ready', просто верим ей
+        if (movie.status === 'ready') {
+          return movieObj
+        }
 
         return movieObj
       } catch (fileErr) {
@@ -132,6 +132,9 @@ const getStatus = (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Content-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders()
+
+  res.write('data: {"connected":true}\n\n')
 
   const onProgress = (data) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`)

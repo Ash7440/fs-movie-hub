@@ -3,6 +3,7 @@ const ffmpeg = require('fluent-ffmpeg')
 const path = require('path')
 const fs = require('fs')
 const conversionEvents = require('./events')
+const Movie = require('../models/movie')
 
 // 1. Используем абсолютный путь через process.cwd() или проверяем __dirname
 const moviesDir = path.resolve(__dirname, '../../downloads')
@@ -35,6 +36,10 @@ const processNext = () => {
   isProcessing = true
   const { filePath, targetPath, fileName, fileExt } = processingQueue.shift()
 
+  const fullName = fileName + fileExt
+
+  const pureName = path.basename(fileName, path.extname(fileName))
+
   console.log(`\nНачинаю работу над: ${fileName}${fileExt}`)
   
   let command = ffmpeg(filePath)
@@ -61,41 +66,72 @@ const processNext = () => {
 
   command
     .output(targetPath)
-    .on('start', (cmd) => {
+    .on('start', async (cmd) => {
        console.log('Команда FFmpeg:', cmd) // Это поможет увидеть, что реально выполняется
+       console.log(fullName)
+
+      try {
+        await Movie.findOneAndUpdate(
+          { fileName: fullName}, // Ищем по имени
+          { status: 'processing' }                 
+        )
+        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+      } catch (err) {
+        console.error('Ошибка обновления БД:', err.message)
+      }
     })
-    .on('progress', (p) => {
+    .on('progress', async (p) => {
       const percent = Math.round(p.percent || 0)
         // 2. ОТПРАВЛЯЕМ ДАННЫЕ В ШИНУ
         // Важно: имя файла должно совпадать с тем, что в базе (без расширения), 
         // чтобы фронтенд понял, к какой карточке относится этот процент.
         conversionEvents.emit('progress', { 
-        fileName: fileName, // Это имя без расширения (pureName)
+        fileName: pureName, // Это имя без расширения (pureName)
         percent: percent,
         status: 'processing'
       })
 
       process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
     })
-    .on('end', () => {
+    .on('end', async () => {
       conversionEvents.emit('progress', { 
-        fileName: fileName, 
+        fileName: pureName, 
         percent: 100, 
         status: 'done' 
       })
 
-      console.log(`\nГотово: ${fileName}.mp4`)
+      try {
+        await Movie.findOneAndUpdate(
+          { fileName: fullName }, // Ищем по имени
+          { status: 'ready' }
+        )
+        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+      } catch (err) {
+        console.error('Ошибка обновления БД:', err.message)
+      }
+
+      console.log(`\nГотово: ${pureName}.mp4`)
       isProcessing = false
       processNext()
     })
-    .on('error', (err) => {
+    .on('error', async (err) => {
 
       conversionEvents.emit('progress', { 
-        fileName: fileName, 
+        fileName: pureName, 
         status: 'error',
         message: err.message 
       })
-      
+
+      try {
+        await Movie.findOneAndUpdate(
+          { fileName: fullName }, // Ищем по имени
+          { status: 'error' }
+        )
+        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+      } catch (err) {
+        console.error('Ошибка обновления БД:', err.message)
+      }
+
       console.error(`\nОшибка FFmpeg (${fileName}):`, err.message)
       isProcessing = false
       processNext()
@@ -113,7 +149,11 @@ const watcher = chokidar.watch(moviesDir.replace(/\\/g, '/'), {
   ignoreInitial: false,
   usePolling: true,
   interval: 500,
-  depth: 0 // Поставь 1, если фильмы лежат в папках внутри downloads
+  depth: 0, // Поставь 1, если фильмы лежат в папках внутри downloads
+  awaitWriteFinish: {
+    stabilityThreshold: 3000, // ждать 3 секунды после последнего изменения размера
+    pollInterval: 500         // проверять размер файла каждые 0.5 сек
+  }
 })
 
 console.log('Запуск сканирования...')

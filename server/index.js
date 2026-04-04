@@ -21,6 +21,8 @@ app.use(express.json())
 
 app.use('/api/movies', movieRoutes)
 
+require('./utils/converter')
+
 app.listen(process.env.PORT, () => {
   console.log(`server run on port: ${process.env.PORT}`)
 })
