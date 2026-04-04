@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Link, useMatch, } from 'react-router-dom'
 
 // Общие стили для всего приложения (Dark Theme)
@@ -103,7 +103,6 @@ const MovieGallery = ({ movies, conversionProgress }) => {
       <style>{appleStyles}</style>
       
       {movies.map((movie) => {
-        console.log(movie)
         const pureName = movie.fileName.replace(/\.[^/.]+$/, "");
         const sseKeys = Object.keys(conversionProgress);
         const matchedKey = sseKeys.find(key => 
@@ -239,23 +238,25 @@ const App = () => {
 
   const baseUrl = 'http://localhost:3001'
 
+  const fetchMovies = useCallback(async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/movies`);
+      if (!response.ok) throw new Error('Unable to fetch data');
+      const data = await response.json();
+      setMovies(data);
+      console.log('✅ Список фильмов успешно обновлен:', data.length, 'шт.');
+    } catch (err) {
+      console.error('Ошибка загрузки фильмов:', err);
+    }
+  }, [baseUrl])
+
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
     document.body.style.margin = '0';
     document.body.style.fontFamily = theme.fontFamily;
 
-    const fetchMovies = async () => {
-      try {
-        const response = await fetch(`${baseUrl}/api/movies`)
-        if (!response.ok) throw new Error('Unable to fetch data')
-        const data = await response.json()
-        setMovies(data)
-      } catch (err) {
-        console.error(err)
-      }
-    }
     fetchMovies()
-  }, [])
+  }, [fetchMovies])
 
   useEffect(() => {
     const eventSource = new EventSource(`${baseUrl}/api/movies/status`)
@@ -265,16 +266,22 @@ const App = () => {
         const data = JSON.parse(event.data)
         console.log('SSE Update:', data)
 
-        setConversionProgress(prev => ({
-          ...prev,
-          [data.fileName]: data.percent
-        }))
+        if (data.type === 'NEW_MOVIE_DETECTED') {
+          console.log('Пойман сигнал о новом фильме! Перезапрашиваем...')
+           fetchMovies()
+           return // Дальше не идем
+        }
+
+        if (data.fileName) {
+            setConversionProgress(prev => ({
+              ...prev,
+              [data.fileName]: data.percent
+            }))
+        }
 
         if (data.status === 'done') {
           setTimeout(() => {
-            fetch(`${baseUrl}/api/movies`)
-              .then(res => res.json())
-              .then(data => setMovies(data))
+            fetchMovies()
           }, 5000)
         } 
       } catch (err) {
@@ -290,7 +297,7 @@ const App = () => {
     return () => {
       eventSource.close()
     }
-  }, [baseUrl])
+  }, [baseUrl, fetchMovies])
 
   const match = useMatch('/movies/:filename')
   const movie = match ? movies.find(m => m.playFile === match.params.filename) : null
