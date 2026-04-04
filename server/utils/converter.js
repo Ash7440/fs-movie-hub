@@ -2,8 +2,11 @@ const chokidar = require('chokidar')
 const ffmpeg = require('fluent-ffmpeg')
 const path = require('path')
 const fs = require('fs')
+const fetch = require('node-fetch')
 const conversionEvents = require('./events')
 const Movie = require('../models/movie')
+const movieHelper = require('./movieHelper')
+const tmdbConfig = require('../config/tmdb')
 
 // 1. Используем абсолютный путь через process.cwd() или проверяем __dirname
 const moviesDir = path.resolve(__dirname, '../../downloads')
@@ -158,22 +161,63 @@ const watcher = chokidar.watch(moviesDir.replace(/\\/g, '/'), {
 
 console.log('Запуск сканирования...')
 
-watcher.on('add', (filePath) => {
+watcher.on('add', async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase()
-  const fileName = path.basename(filePath, fileExt)
-  const targetPath = path.join(outputDir, `${fileName}.mp4`)
-
-  console.log(`Вижу файл: ${fileName}${fileExt}`)
+  const fileNameWithExt = path.basename(filePath) // Полное имя для БД (Spider-Man.mkv)
+  const pureName = path.basename(filePath, fileExt)// Имя без расширения (Spider-Man)
+  const targetPath = path.join(outputDir, `${pureName}.mp4`)
 
   const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv']
-  if (supportedExtensions.includes(fileExt)) {
+  if (!supportedExtensions.includes(fileExt)) return
+
+  console.log(`\nВижу новый файл: ${fileNameWithExt}`)
+
+  try {
+    // 1. ПРОВЕРЯЕМ БАЗУ ДАННЫХ
+    let movie = await Movie.findOne({ fileName: fileNameWithExt })
+
+    if (!movie) {
+      console.log(`Создаю запись в БД для: ${pureName}`)
+      const query = movieHelper.cleanMovieName(fileNameWithExt)
+      
+      // Запрос к TMDB (ставим ru-RU для русского описания)
+      const response = await fetch(
+        `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=ru-RU&page=1`, 
+        tmdbConfig()
+      )
+
+      const arrMovies = await response.json()
+      const data = arrMovies?.results?.[0]
+
+      movie = new Movie({
+        fileName: fileNameWithExt,
+        title: data?.title || query,
+        tmdbId: data?.id || null,
+        posterPath: data?.poster_path || null,
+        overview: data?.overview || 'Описание отсутствует',
+        releaseDate: data?.release_date || null,
+        status: 'processing' // Сразу помечаем как "в обработке"
+      })
+
+      await movie.save();
+      console.log(`Запись создана: ${movie.title}`);
+    }
+
+    // 2. ДОБАВЛЯЕМ В ОЧЕРЕДЬ КОНВЕРТАЦИИ
     if (!fs.existsSync(targetPath)) {
-      console.log(`Добавляю в очередь: ${fileName}`)
-      processingQueue.push({ filePath, targetPath, fileName, fileExt })
+      console.log(`В очередь: ${pureName}`)
+      processingQueue.push({ filePath, targetPath, fileName: pureName, fileExt })
       processNext()
     } else {
-      console.log(`Пропускаю (уже есть mp4): ${fileName}`)
+      console.log(`Уже сконвертирован: ${pureName}`)
+      // Если файл уже есть на диске, убеждаемся что в базе статус 'ready'
+      if (movie.status !== 'ready') {
+        movie.status = 'ready'
+        await movie.save()
+      }
     }
+  } catch (err) {
+    console.error(`Ошибка Watcher (add):`, err.message)
   }
 })
 

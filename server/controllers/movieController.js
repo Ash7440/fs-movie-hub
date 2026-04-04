@@ -1,75 +1,27 @@
-const fs = require('fs').promises
 require('dotenv').config()
 const fsSync = require('fs')
 const path = require('path')
-const fetch = require('node-fetch')
-const movieHelper = require('../utils/movieHelper')
-const tmdbConfig = require('../config/tmdb')
+
 const Movie = require('../models/movie')
 const conversionEvents = require('../utils/events')
 
-const moviesDir = path.join(process.cwd(), '..', process.env.MOVIES_DIR || 'downloads')
 const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
 
 const getMovies = async (req, res) => {
   try {
-    const allFiles = await fs.readdir(moviesDir)
-    const convertedFiles = await fs.readdir(convertedDir)
+    // Просто берем все фильмы из базы данных
+    const movies = await Movie.find().sort({ addedAt: -1 })
 
-    // 1. Сначала фильтруем только видео
-    const videoFiles = allFiles.filter(file => {
-      const ext = path.extname(file).toLowerCase()
-      return ['.mp4', '.mkv', '.avi', '.mov'].includes(ext)
+    const moviesWithData = movies.map(movie => {
+      const movieObj = movie.toObject({ virtuals: true })
+      
+      // Формируем имя mp4 файла на лету
+      // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
+      const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
+      movieObj.playFile = `${pureName}.mp4`
+
+      return movieObj
     })
-
-    // 2. Обрабатываем каждый файл
-    const moviesWithData = await Promise.all(videoFiles.map(async (file) => {
-      try {
-        let movie = await Movie.findOne({ fileName: file })
-
-        // Если фильма нет в базе — идем в TMDB
-        if (!movie) {
-          console.log(`New movie found: ${file}. Fetching metadata...`)
-          const query = movieHelper.cleanMovieName(file)
-          
-          const response = await fetch(
-            `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=1`, 
-            tmdbConfig()
-          )
-
-          if (!response.ok) throw new Error('TMDB_FETCH_FAILED')
-
-          const arrMovies = await response.json()
-          const data = arrMovies?.results?.[0]
-
-          // Создаем новую запись (только если данные найдены, иначе ставим заглушки)
-          movie = new Movie({
-            fileName: file,
-            title: data?.title || query,
-            tmdbId: data?.id || null,
-            posterPath: data?.poster_path || null,
-            overview: data?.overview || 'Описание отсутствует',
-            releaseDate: data?.release_date || null
-          })
-
-          await movie.save()
-        }
-
-        const movieObj = movie.toObject({ virtuals: true });
-        const pureName = path.basename(file, path.extname(file));
-        movieObj.playFile = `${pureName}.mp4`;
-
-        // Если в базе УЖЕ написано 'ready', просто верим ей
-        if (movie.status === 'ready') {
-          return movieObj
-        }
-
-        return movieObj
-      } catch (fileErr) {
-        console.error(`Error processing file ${file}:`, fileErr.message)
-        return { fileName: file, title: 'Error loading data', posterPath: null }
-      }
-    }))
 
     res.json(moviesWithData)
   } catch (err) {
