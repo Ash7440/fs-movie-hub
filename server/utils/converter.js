@@ -163,8 +163,8 @@ console.log('Запуск сканирования...')
 
 watcher.on('add', async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase()
-  const fileNameWithExt = path.basename(filePath) // Полное имя для БД (Spider-Man.mkv)
-  const pureName = path.basename(filePath, fileExt)// Имя без расширения (Spider-Man)
+  const fileNameWithExt = path.basename(filePath) // Полное имя для БД
+  const pureName = path.basename(filePath, fileExt)// Имя без расширения
   const targetPath = path.join(outputDir, `${pureName}.mp4`)
 
   const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv']
@@ -199,8 +199,13 @@ watcher.on('add', async (filePath) => {
         status: 'processing' // Сразу помечаем как "в обработке"
       })
 
-      await movie.save();
-      console.log(`Запись создана: ${movie.title}`);
+      await movie.save()
+      console.log(`Запись создана: ${movie.title}`)
+
+      conversionEvents.emit('progress', { 
+        type: 'NEW_MOVIE_DETECTED', // Специальный тип события
+        status: 'new' 
+      })
     }
 
     // 2. ДОБАВЛЯЕМ В ОЧЕРЕДЬ КОНВЕРТАЦИИ
