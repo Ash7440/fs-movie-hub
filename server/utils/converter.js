@@ -52,6 +52,7 @@ const processNext = () => {
     command
       .videoCodec('copy')     // ПРЯМОЕ КОПИРОВАНИЕ ВИДЕО
       .audioCodec('aac')      // Конвертируем только звук
+      .audioChannels(2)
       .audioBitrate('192k')
       .outputOptions('-movflags +faststart')
   } else {
@@ -59,6 +60,7 @@ const processNext = () => {
     command
       .videoCodec('libx264')
       .audioCodec('aac')
+      .audioChannels(2)
       .audioBitrate('192k')
       .outputOptions([
         '-preset fast',

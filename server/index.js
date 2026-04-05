@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
 require('dotenv').config()
+const path = require('path')
 const movieRoutes = require('./routes/movieRoutes')
 
 const app = express()
@@ -23,6 +24,8 @@ app.use('/api/movies', movieRoutes)
 
 require('./utils/converter')
 
-app.listen(process.env.PORT, () => {
+app.use(express.static(path.join(__dirname, 'dist')))
+
+app.listen(process.env.PORT, '0.0.0.0', () => {
   console.log(`server run on port: ${process.env.PORT}`)
 })

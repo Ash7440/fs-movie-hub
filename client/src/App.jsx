@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Link, useMatch, } from 'react-router-dom'
 
+const baseUrl = import.meta.env.MODE === 'development' 
+  ? 'http://localhost:3001' 
+  : ''
+
 // Общие стили для всего приложения (Dark Theme)
 const theme = {
   bg: '#0a0a0a',
@@ -182,7 +186,7 @@ const MovieGallery = ({ movies, conversionProgress }) => {
 const VideoPlayer = ({ movie }) => {
   if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>;
 
-  const url = `http://localhost:3001/api/movies/${movie.playFile}`
+  const url = `${baseUrl}/api/movies/${movie.playFile}`
   
   const styles = {
     container: {
@@ -236,8 +240,6 @@ const App = () => {
   const [movies, setMovies] = useState([])
   const [conversionProgress, setConversionProgress] = useState({})
 
-  const baseUrl = 'http://localhost:3001'
-
   const fetchMovies = useCallback(async () => {
     try {
       const response = await fetch(`${baseUrl}/api/movies`);
@@ -248,7 +250,7 @@ const App = () => {
     } catch (err) {
       console.error('Ошибка загрузки фильмов:', err);
     }
-  }, [baseUrl])
+  }, [])
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
@@ -297,7 +299,7 @@ const App = () => {
     return () => {
       eventSource.close()
     }
-  }, [baseUrl, fetchMovies])
+  }, [fetchMovies])
 
   const match = useMatch('/movies/:filename')
   const movie = match ? movies.find(m => m.playFile === match.params.filename) : null
