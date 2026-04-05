@@ -3,13 +3,13 @@ import { Routes, Route, Link, useMatch, } from 'react-router-dom'
 
 const baseUrl = import.meta.env.MODE === 'development' 
   ? 'http://localhost:3001' 
-  : ''
+  : window.location.origin
 
 // Общие стили для всего приложения (Dark Theme)
 const theme = {
   bg: '#0a0a0a',
   cardBg: '#161616',
-  accent: '#e50914', // Красный как у Netflix для акцентов
+  accent: '#e50914',
   textMain: '#ffffff',
   textSecondary: '#a3a3a3',
   fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
@@ -107,16 +107,16 @@ const MovieGallery = ({ movies, conversionProgress }) => {
       <style>{appleStyles}</style>
       
       {movies.map((movie) => {
-        const pureName = movie.fileName.replace(/\.[^/.]+$/, "");
-        const sseKeys = Object.keys(conversionProgress);
+        const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
+        const sseKeys = Object.keys(conversionProgress)
         const matchedKey = sseKeys.find(key => 
           pureName === key || pureName.includes(key) || key.includes(pureName)
         );
         
-        const livePercent = matchedKey ? conversionProgress[matchedKey] : 0;
+        const livePercent = matchedKey ? conversionProgress[matchedKey] : 0
         
         const showAsReady = movie.status === 'ready'
-        const finalIsProcessing = !showAsReady;
+        const finalIsProcessing = !showAsReady
 
         return (
           <div key={movie.fileName} style={{ position: 'relative' }}>
@@ -184,7 +184,7 @@ const MovieGallery = ({ movies, conversionProgress }) => {
 }
 
 const VideoPlayer = ({ movie }) => {
-  if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>;
+  if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>
 
   const url = `${baseUrl}/api/movies/${movie.playFile}`
   
@@ -242,20 +242,20 @@ const App = () => {
 
   const fetchMovies = useCallback(async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/movies`);
-      if (!response.ok) throw new Error('Unable to fetch data');
-      const data = await response.json();
-      setMovies(data);
-      console.log('✅ Список фильмов успешно обновлен:', data.length, 'шт.');
+      const response = await fetch(`${baseUrl}/api/movies`)
+      if (!response.ok) throw new Error('Unable to fetch data')
+      const data = await response.json()
+      setMovies(data)
+      console.log('Список фильмов успешно обновлен:', data.length, 'шт.')
     } catch (err) {
-      console.error('Ошибка загрузки фильмов:', err);
+      console.error('Ошибка загрузки фильмов:', err)
     }
   }, [])
 
   useEffect(() => {
-    document.body.style.backgroundColor = theme.bg;
-    document.body.style.margin = '0';
-    document.body.style.fontFamily = theme.fontFamily;
+    document.body.style.backgroundColor = theme.bg
+    document.body.style.margin = '0'
+    document.body.style.fontFamily = theme.fontFamily
 
     fetchMovies()
   }, [fetchMovies])

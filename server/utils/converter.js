@@ -13,7 +13,6 @@ const moviesDir = path.resolve(__dirname, '../../downloads')
 const outputDir = path.resolve(moviesDir, 'converted')
 
 console.log('--- ОТЛАДКА ПУТЕЙ ---')
-console.log('Текущая директория скрипта:', __dirname)
 console.log('Папка с фильмами:', moviesDir)
 console.log('Папка для вывода:', outputDir)
 console.log('----------------------')
@@ -47,8 +46,7 @@ const processNext = () => {
   
   let command = ffmpeg(filePath)
 
-  if (fileExt === '.mkv') {
-    // РЕЖИМ РЕМУКСА (БЫСТРЫЙ)
+  if (fileExt === '.mkv' || fileExt === '.mp4') {
     command
       .videoCodec('copy')     // ПРЯМОЕ КОПИРОВАНИЕ ВИДЕО
       .audioCodec('aac')      // Конвертируем только звук
@@ -56,7 +54,6 @@ const processNext = () => {
       .audioBitrate('192k')
       .outputOptions('-movflags +faststart')
   } else {
-    // РЕЖИМ ПОЛНОГО ПЕРЕКОДИРОВАНИЯ (МЕДЛЕННЫЙ)
     command
       .videoCodec('libx264')
       .audioCodec('aac')
@@ -73,7 +70,6 @@ const processNext = () => {
     .output(targetPath)
     .on('start', async (cmd) => {
        console.log('Команда FFmpeg:', cmd) // Это поможет увидеть, что реально выполняется
-       console.log(fullName)
 
       try {
         await Movie.findOneAndUpdate(
@@ -87,11 +83,8 @@ const processNext = () => {
     })
     .on('progress', async (p) => {
       const percent = Math.round(p.percent || 0)
-        // 2. ОТПРАВЛЯЕМ ДАННЫЕ В ШИНУ
-        // Важно: имя файла должно совпадать с тем, что в базе (без расширения), 
-        // чтобы фронтенд понял, к какой карточке относится этот процент.
-        conversionEvents.emit('progress', { 
-        fileName: pureName, // Это имя без расширения (pureName)
+        conversionEvents.emit('progress', {
+        fileName: pureName,
         percent: percent,
         status: 'processing'
       })
@@ -107,7 +100,7 @@ const processNext = () => {
 
       try {
         await Movie.findOneAndUpdate(
-          { fileName: fullName }, // Ищем по имени
+          { fileName: fullName },
           { status: 'ready' }
         )
         console.log(`\nСтатус в БД обновлен: ${pureName}`)
@@ -129,7 +122,7 @@ const processNext = () => {
 
       try {
         await Movie.findOneAndUpdate(
-          { fileName: fullName }, // Ищем по имени
+          { fileName: fullName },
           { status: 'error' }
         )
         console.log(`\nСтатус в БД обновлен: ${pureName}`)
@@ -154,10 +147,10 @@ const watcher = chokidar.watch(moviesDir.replace(/\\/g, '/'), {
   ignoreInitial: false,
   usePolling: true,
   interval: 500,
-  depth: 0, // Поставь 1, если фильмы лежат в папках внутри downloads
+  depth: 0,
   awaitWriteFinish: {
-    stabilityThreshold: 3000, // ждать 3 секунды после последнего изменения размера
-    pollInterval: 500         // проверять размер файла каждые 0.5 сек
+    stabilityThreshold: 5000,
+    pollInterval: 500
   }
 })
 
@@ -165,24 +158,23 @@ console.log('Запуск сканирования...')
 
 watcher.on('add', async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase()
-  const fileNameWithExt = path.basename(filePath) // Полное имя для БД
-  const pureName = path.basename(filePath, fileExt)// Имя без расширения
+  const fileNameWithExt = path.basename(filePath)
+  const pureName = path.basename(filePath, fileExt)
   const targetPath = path.join(outputDir, `${pureName}.mp4`)
 
-  const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv']
+  const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv', '.mp4']
   if (!supportedExtensions.includes(fileExt)) return
 
   console.log(`\nВижу новый файл: ${fileNameWithExt}`)
 
   try {
-    // 1. ПРОВЕРЯЕМ БАЗУ ДАННЫХ
     let movie = await Movie.findOne({ fileName: fileNameWithExt })
 
     if (!movie) {
       console.log(`Создаю запись в БД для: ${pureName}`)
       const query = movieHelper.cleanMovieName(fileNameWithExt)
       
-      // Запрос к TMDB (ставим ru-RU для русского описания)
+      // Запрос к TMDB
       const response = await fetch(
         `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=ru-RU&page=1`, 
         tmdbConfig()
@@ -198,14 +190,14 @@ watcher.on('add', async (filePath) => {
         posterPath: data?.poster_path || null,
         overview: data?.overview || 'Описание отсутствует',
         releaseDate: data?.release_date || null,
-        status: 'processing' // Сразу помечаем как "в обработке"
+        status: 'processing'
       })
 
       await movie.save()
       console.log(`Запись создана: ${movie.title}`)
 
       conversionEvents.emit('progress', { 
-        type: 'NEW_MOVIE_DETECTED', // Специальный тип события
+        type: 'NEW_MOVIE_DETECTED',
         status: 'new' 
       })
     }
