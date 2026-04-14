@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import './MovieCard.css'
+import { useMovieContext } from '../context/MovieContext'
 
-const MovieCard = ({ movie, conversionProgress }) => {
+const MovieCard = ({ movie }) => {
+  const { conversionProgress } = useMovieContext()
 
   const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
   const sseKeys = Object.keys(conversionProgress)
