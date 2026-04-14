@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, Link, useMatch, } from 'react-router-dom'
 import MovieGallery from './components/MovieGallery'
 import VideoPlayer from './components/VideoPlayer'
-import { useMovies } from './hooks/useMovie'
+import { useMovieContext } from './context/MovieContext'
 
   // Общие стили для всего приложения (Dark Theme)
 const theme = {
@@ -15,7 +15,7 @@ const theme = {
 }
 
 const App = () => {
-  const { movies, conversionProgress, baseUrl } = useMovies()
+  const { movies, baseUrl } = useMovieContext
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg
@@ -44,7 +44,7 @@ const App = () => {
       </header>
 
       <Routes>
-        <Route path='/' element={<MovieGallery movies={movies} conversionProgress={conversionProgress} />} />
+        <Route path='/' element={<MovieGallery movies={movies} />} />
         <Route path='/movies/:filename' element={<VideoPlayer movie={movie} baseUrl={baseUrl} theme={theme} />} />
       </Routes>
     </div>
