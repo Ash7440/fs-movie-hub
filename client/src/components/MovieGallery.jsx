@@ -1,6 +1,6 @@
 import MovieCard from './MovieCard'
 
-const MovieGallery = ({ movies, conversionProgress }) => {
+const MovieGallery = ({ movies }) => {
 
  return (
     <div style={{
@@ -13,7 +13,7 @@ const MovieGallery = ({ movies, conversionProgress }) => {
     }}>
       
       {movies.map((movie) => 
-        <MovieCard key={movie.fileName} movie={movie} conversionProgress={conversionProgress} />
+        <MovieCard key={movie.fileName} movie={movie} />
       )}
     </div>
   )

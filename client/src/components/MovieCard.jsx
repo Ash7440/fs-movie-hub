@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import './MovieCard.css'
-import { useMovieContext } from '../context/MovieContext'
+import { useMovieContext } from '../hooks/useMovieContext'
 
 const MovieCard = ({ movie }) => {
   const { conversionProgress } = useMovieContext()
