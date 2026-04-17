@@ -1,7 +1,5 @@
-import { createContext, useContext } from 'react'
 import { useMovies } from '../hooks/useMovie'
-
-const MovieContext = createContext()
+import { MovieContext } from '../hooks/useMovieContext'
 
 export const MovieProvider = ({ children }) => {
   const { movies, conversionProgress, baseUrl } = useMovies()
@@ -11,8 +9,4 @@ export const MovieProvider = ({ children }) => {
       {children}
     </MovieContext.Provider>
   )
-}
-
-export const useMovieContext = () => {
-  return useContext(MovieContext)
 }
