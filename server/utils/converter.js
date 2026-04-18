@@ -1,15 +1,15 @@
 const chokidar = require('chokidar')
 const ffmpeg = require('fluent-ffmpeg')
+const fetch = require('node-fetch')
 const path = require('path')
 const fs = require('fs')
-const fetch = require('node-fetch')
+
 const conversionEvents = require('./events')
 const Movie = require('../models/movie')
 const movieHelper = require('./movieHelper')
 const { tmdbConfig } = require('../config/tmdb')
 const downloadPoster = require('./downloadPoster')
 
-// 1. Используем абсолютный путь через process.cwd() или проверяем __dirname
 const moviesDir = path.resolve(__dirname, '../../downloads')
 const outputDir = path.resolve(moviesDir, 'converted')
 
@@ -17,6 +17,15 @@ console.log('--- ОТЛАДКА ПУТЕЙ ---')
 console.log('Папка с фильмами:', moviesDir)
 console.log('Папка для вывода:', outputDir)
 console.log('----------------------')
+
+const getMediaInfo = (filePath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) reject(err)
+      else resolve(metadata)
+    })
+  })
+}
 
 // 2. Создаем папку с проверкой ошибок
 try {
@@ -34,7 +43,7 @@ try {
 let processingQueue = []
 let isProcessing = false
 
-const processNext = () => {
+const processNext = async () => {
   if (processingQueue.length === 0 || isProcessing) return
   isProcessing = true
   const { filePath, targetPath, fileName, fileExt } = processingQueue.shift()
@@ -44,33 +53,54 @@ const processNext = () => {
   const pureName = path.basename(fileName, path.extname(fileName))
 
   console.log(`\nНачинаю работу над: ${fileName}${fileExt}`)
+
+  let videoCodecName = null
+
+  try {
+    const metadata = await getMediaInfo(filePath)
+    const videoStream = metadata.streams.find(s => s.codec_type === 'video')
+
+    if (videoStream) {
+      videoCodecName = videoStream.codec_name
+      console.log(`Обноружен видеокодек: ${videoCodecName}`)
+    }
+  } catch (err) {
+    console.error(`Ошибка при чтении файла ${fileName}`, err.message)
+    isProcessing = false
+    processNext()
+    return
+  }
   
   let command = ffmpeg(filePath)
 
-  if (fileExt === '.mkv' || fileExt === '.mp4') {
+  if ((fileExt === '.mkv' || fileExt === '.mp4') && videoCodecName === 'h264') {
+    console.log('Прямое копирование видеопотока')
     command
-      .videoCodec('copy')     // ПРЯМОЕ КОПИРОВАНИЕ ВИДЕО
-      .audioCodec('aac')      // Конвертируем только звук
+      .videoCodec('copy')
+      .audioCodec('aac')
       .audioChannels(2)
       .audioBitrate('192k')
       .outputOptions('-movflags +faststart')
   } else {
     command
-      .videoCodec('libx264')
+      .videoCodec('h264_nvenc')
+      .outputOptions([
+        '-preset slow',
+        '-profile:v high',
+        '-rc vbr',
+        '-cq 24',
+        '-gpu 0',
+        '-movflags +faststart'
+      ])
       .audioCodec('aac')
       .audioChannels(2)
       .audioBitrate('192k')
-      .outputOptions([
-        '-preset fast',
-        '-crf 22',
-        '-movflags +faststart'
-      ])
   }
 
   command
     .output(targetPath)
     .on('start', async (cmd) => {
-       console.log('Команда FFmpeg:', cmd) // Это поможет увидеть, что реально выполняется
+       console.log('Команда FFmpeg:', cmd)
 
       try {
         await Movie.findOneAndUpdate(
