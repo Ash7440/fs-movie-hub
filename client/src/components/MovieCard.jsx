@@ -3,7 +3,7 @@ import './MovieCard.css'
 import { useMovieContext } from '../hooks/useMovieContext'
 
 const MovieCard = ({ movie }) => {
-  const { conversionProgress } = useMovieContext()
+  const { conversionProgress, baseUrl } = useMovieContext()
 
   const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
   const sseKeys = Object.keys(conversionProgress)
@@ -50,7 +50,7 @@ const MovieCard = ({ movie }) => {
           )}
           {/* 2. Само изображение */}
           <img 
-            src={movie.fullPosterUrl || 'https://via.placeholder.com/300x450?text=No+Poster'} 
+            src={`${baseUrl}${movie.localPosterPath}` || 'https://via.placeholder.com/300x450?text=No+Poster'} 
             alt={movie.title}
             // Класс меняется строго по нашей новой логике
             className={`poster-img ${finalIsProcessing ? 'is-processing' : 'is-ready'}`}

@@ -9,6 +9,7 @@ const movieSchema = new mongoose.Schema({
   title: String,
   tmdbId: Number,
   posterPath: String,
+  localPosterPath: String,
   overview: String,
   releaseDate: String,
   status: {

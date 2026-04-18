@@ -6,7 +6,8 @@ const fetch = require('node-fetch')
 const conversionEvents = require('./events')
 const Movie = require('../models/movie')
 const movieHelper = require('./movieHelper')
-const tmdbConfig = require('../config/tmdb')
+const { tmdbConfig } = require('../config/tmdb')
+const downloadPoster = require('./downloadPoster')
 
 // 1. Используем абсолютный путь через process.cwd() или проверяем __dirname
 const moviesDir = path.resolve(__dirname, '../../downloads')
@@ -183,11 +184,14 @@ watcher.on('add', async (filePath) => {
       const arrMovies = await response.json()
       const data = arrMovies?.results?.[0]
 
+      const localPoster = await downloadPoster(data?.poster_path || null)
+
       movie = new Movie({
         fileName: fileNameWithExt,
         title: data?.title || query,
         tmdbId: data?.id || null,
         posterPath: data?.poster_path || null,
+        localPosterPath: localPoster || null,
         overview: data?.overview || 'Описание отсутствует',
         releaseDate: data?.release_date || null,
         status: 'processing'

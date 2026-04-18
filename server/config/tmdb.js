@@ -1,8 +1,9 @@
 const HttpsProxyAgent = require('https-proxy-agent')
 require('dotenv').config()
 
+const agent = new HttpsProxyAgent('http://127.0.0.1:8080')
+
 const tmdbConfig = () => {
-  const agent = new HttpsProxyAgent('http://127.0.0.1:8080')
 
   const config = {
     method: 'GET',
@@ -16,4 +17,7 @@ const tmdbConfig = () => {
   return config
 }
 
-module.exports = tmdbConfig
+module.exports = {
+  agent,
+  tmdbConfig
+}
