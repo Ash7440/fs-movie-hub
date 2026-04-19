@@ -3,6 +3,7 @@ const path = require('path')
 const fetch = require('node-fetch')
 const { pipeline } = require('stream/promises')
 const { agent } = require('../config/tmdb')
+const logger = require('./logger')
 
 const downloadPoster = async (posterPath) => {
   if (!posterPath) {
@@ -24,7 +25,6 @@ const downloadPoster = async (posterPath) => {
     const response = await fetch(imageUrl, {
       agent: agent,
       headers: {
-        // Притворяемся браузером, чтобы CDN не выдал 404/403
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       }
     })
@@ -39,7 +39,11 @@ const downloadPoster = async (posterPath) => {
 
     return publicUrl
   } catch (err) {
-    console.error('Failed to download from node-fetch', err.message)
+    logger.error('Failed to download from node-fetch: %s', err.message, {
+      service: 'downloadPoster',
+      posterPath,
+      stack: err.stack
+    })
     return null
   }
 }

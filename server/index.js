@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 const path = require('path')
 const movieRoutes = require('./routes/movieRoutes')
+const logger = require('./utils/logger')
 
 const app = express()
 
@@ -12,10 +13,10 @@ app.use(cors())
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('mongodb connected!')
+    logger.info('mongodb connected!')
   })
   .catch(() => {
-    console.log('failed to connect to db')
+    logger.error('failed to connect to db')
   })
 
 app.use(express.json())

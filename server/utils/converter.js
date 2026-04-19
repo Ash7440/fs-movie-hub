@@ -9,14 +9,12 @@ const Movie = require('../models/movie')
 const movieHelper = require('./movieHelper')
 const { tmdbConfig } = require('../config/tmdb')
 const downloadPoster = require('./downloadPoster')
+const logger = require('./logger')
 
 const moviesDir = path.resolve(__dirname, '../../downloads')
 const outputDir = path.resolve(moviesDir, 'converted')
 
-console.log('--- ОТЛАДКА ПУТЕЙ ---')
-console.log('Папка с фильмами:', moviesDir)
-console.log('Папка для вывода:', outputDir)
-console.log('----------------------')
+logger.info('Конвертер запущен', { moviesDir, outputDir })
 
 const getMediaInfo = (filePath) => {
   return new Promise((resolve, reject) => {
@@ -30,14 +28,18 @@ const getMediaInfo = (filePath) => {
 // 2. Создаем папку с проверкой ошибок
 try {
   if (!fs.existsSync(outputDir)) {
-    console.log('Попытка создать папку converted...')
+    logger.info('Попытка создать папку converted')
     fs.mkdirSync(outputDir, { recursive: true })
-    console.log('Папка создана успешно')
+    logger.info('Папка создана успешно')
   } else {
-    console.log('Папка converted уже существует')
+    logger.info('Папка converted уже существует')
   }
 } catch (err) {
-  console.error('Ошибка при создании папки:', err.message)
+  logger.error('Ошибка при создании папки:', { 
+    foldername: outputDir,
+    message: err.message,
+    stack: err.stack
+  })
 }
 
 let processingQueue = []
@@ -52,7 +54,7 @@ const processNext = async () => {
 
   const pureName = path.basename(fileName, path.extname(fileName))
 
-  console.log(`\nНачинаю работу над: ${fileName}${fileExt}`)
+  logger.info('Начата конвертация %s%s', fileName, fileExt)
 
   let videoCodecName = null
 
@@ -62,10 +64,14 @@ const processNext = async () => {
 
     if (videoStream) {
       videoCodecName = videoStream.codec_name
-      console.log(`Обноружен видеокодек: ${videoCodecName}`)
+      logger.info('Обнаружен видеокодек: %s', videoCodecName)
     }
   } catch (err) {
-    console.error(`Ошибка при чтении файла ${fileName}`, err.message)
+    logger.error('Ошибка при чтении файла', {
+      filename: fileName,
+      message: err.message,
+      stack: err.stack
+    })
     isProcessing = false
     processNext()
     return
@@ -74,7 +80,7 @@ const processNext = async () => {
   let command = ffmpeg(filePath)
 
   if ((fileExt === '.mkv' || fileExt === '.mp4') && videoCodecName === 'h264') {
-    console.log('Прямое копирование видеопотока')
+    logger.info('Прямое копирование видеопотока')
     command
       .videoCodec('copy')
       .audioCodec('aac')
@@ -82,6 +88,7 @@ const processNext = async () => {
       .audioBitrate('192k')
       .outputOptions('-movflags +faststart')
   } else {
+    logger.info('Перекодирование видеопотока')
     command
       .videoCodec('h264_nvenc')
       .outputOptions([
@@ -100,16 +107,16 @@ const processNext = async () => {
   command
     .output(targetPath)
     .on('start', async (cmd) => {
-       console.log('Команда FFmpeg:', cmd)
+      logger.info('Команда FFmpeg: %s', cmd)
 
       try {
         await Movie.findOneAndUpdate(
           { fileName: fullName}, // Ищем по имени
           { status: 'processing' }                 
         )
-        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+        logger.info('Статус в БД обновлен: %s', pureName)
       } catch (err) {
-        console.error('Ошибка обновления БД:', err.message)
+        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
       }
     })
     .on('progress', async (p) => {
@@ -121,8 +128,13 @@ const processNext = async () => {
       })
 
       process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
+
+      if (percent % 25 === 0 && percent !== 0) {
+        logger.info('Конвертация фильма %s: пройден этап %d%%', fileName, percent);
+      }
     })
     .on('end', async () => {
+      process.stdout.write('\n')
       conversionEvents.emit('progress', { 
         fileName: pureName, 
         percent: 100, 
@@ -134,12 +146,12 @@ const processNext = async () => {
           { fileName: fullName },
           { status: 'ready' }
         )
-        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+        logger.info('Статус в БД обновлен %s', pureName)
       } catch (err) {
-        console.error('Ошибка обновления БД:', err.message)
+        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
       }
 
-      console.log(`\nГотово: ${pureName}.mp4`)
+      logger.info('Готово: %s.mp4', pureName)
       isProcessing = false
       processNext()
     })
@@ -156,12 +168,12 @@ const processNext = async () => {
           { fileName: fullName },
           { status: 'error' }
         )
-        console.log(`\nСтатус в БД обновлен: ${pureName}`)
+        logger.info('Статус в БД обновлен: %s', pureName)
       } catch (err) {
-        console.error('Ошибка обновления БД:', err.message)
+        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
       }
 
-      console.error(`\nОшибка FFmpeg (${fileName}):`, err.message)
+      logger.error('Ошибка FFmpeg в файле %s: %s', fileName, err.message, { stack: err.stack })
       isProcessing = false
       processNext()
     })
@@ -185,7 +197,7 @@ const watcher = chokidar.watch(moviesDir.replace(/\\/g, '/'), {
   }
 })
 
-console.log('Запуск сканирования...')
+logger.info('Запуск сканирования...')
 
 watcher.on('add', async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase()
@@ -196,13 +208,13 @@ watcher.on('add', async (filePath) => {
   const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv', '.mp4']
   if (!supportedExtensions.includes(fileExt)) return
 
-  console.log(`\nВижу новый файл: ${fileNameWithExt}`)
+  logger.info('Новый файл: %s', fileNameWithExt)
 
   try {
     let movie = await Movie.findOne({ fileName: fileNameWithExt })
 
     if (!movie) {
-      console.log(`Создаю запись в БД для: ${pureName}`)
+      logger.info('Создание записи в БД для: %s', pureName)
       const query = movieHelper.cleanMovieName(fileNameWithExt)
       
       // Запрос к TMDB
@@ -228,7 +240,7 @@ watcher.on('add', async (filePath) => {
       })
 
       await movie.save()
-      console.log(`Запись создана: ${movie.title}`)
+      logger.info('Запись создана: %s', movie.title)
 
       conversionEvents.emit('progress', { 
         type: 'NEW_MOVIE_DETECTED',
@@ -238,24 +250,23 @@ watcher.on('add', async (filePath) => {
 
     // 2. ДОБАВЛЯЕМ В ОЧЕРЕДЬ КОНВЕРТАЦИИ
     if (!fs.existsSync(targetPath)) {
-      console.log(`В очередь: ${pureName}`)
+      logger.info('В очередь: %s', pureName)
       processingQueue.push({ filePath, targetPath, fileName: pureName, fileExt })
       processNext()
     } else {
-      console.log(`Уже сконвертирован: ${pureName}`)
-      // Если файл уже есть на диске, убеждаемся что в базе статус 'ready'
+      logger.info('Уже сконвертирован: %s', pureName)
       if (movie.status !== 'ready') {
         movie.status = 'ready'
         await movie.save()
       }
     }
   } catch (err) {
-    console.error(`Ошибка Watcher (add):`, err.message)
+    logger.error('Ошибка Watcher (add): %s', err.message, {stack: err.stack})
   }
 })
 
 watcher.on('ready', () => {
-  console.log('Сканирование завершено. Ожидаю новые файлы...')
+  logger.info('Сканирование завершено. Ожидаю новые файлы...')
 })
 
-watcher.on('error', error => console.log(`Ошибка Watcher: ${error}`))
+watcher.on('error', error => logger.error('Ошибка Watcher: %s', error.message, { stack: error.stack }))

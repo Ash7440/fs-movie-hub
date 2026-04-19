@@ -9,13 +9,11 @@ const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR ||
 
 const getMovies = async (req, res) => {
   try {
-    // Просто берем все фильмы из базы данных
     const movies = await Movie.find().sort({ addedAt: -1 })
 
     const moviesWithData = movies.map(movie => {
       const movieObj = movie.toObject({ virtuals: true })
       
-      // Формируем имя mp4 файла на лету
       // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
       const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
       movieObj.playFile = `${pureName}.mp4`
@@ -25,7 +23,10 @@ const getMovies = async (req, res) => {
 
     res.json(moviesWithData)
   } catch (err) {
-    console.error('Global Error:', err)
+    logger.error('Global Error: %s', err, {
+      service: 'movieController/getMovies',
+      stack: err.stack
+    })
     res.status(500).json({ error: 'Internal Server Error' })
   }
 }
@@ -75,7 +76,10 @@ const streamVideo = (req, res) => {
       fsSync.createReadStream(videoPath).pipe(res)
     }
   } catch (err) {
-    console.error('Global Error:', err)
+    logger.error('Global Error: %s', err, {
+      service: 'movieController/streamVideo',
+      stack: err.stack
+    })
     res.status(500).json({ error: 'Internal Server Error' })
   }
 }
