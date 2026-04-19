@@ -1,15 +1,14 @@
 const chokidar = require('chokidar')
 const ffmpeg = require('fluent-ffmpeg')
-const fetch = require('node-fetch')
 const path = require('path')
 const fs = require('fs')
 
+const logger = require('./logger')
+const movieHelper = require('./movieHelper')
 const conversionEvents = require('./events')
 const Movie = require('../models/movie')
-const movieHelper = require('./movieHelper')
-const { tmdbConfig } = require('../config/tmdb')
 const downloadPoster = require('./downloadPoster')
-const logger = require('./logger')
+const fetchTmdb = require('../services/tmdbService')
 
 const moviesDir = path.resolve(__dirname, '../../downloads')
 const outputDir = path.resolve(moviesDir, 'converted')
@@ -216,15 +215,8 @@ watcher.on('add', async (filePath) => {
     if (!movie) {
       logger.info('Создание записи в БД для: %s', pureName)
       const query = movieHelper.cleanMovieName(fileNameWithExt)
-      
-      // Запрос к TMDB
-      const response = await fetch(
-        `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=ru-RU&page=1`, 
-        tmdbConfig()
-      )
 
-      const arrMovies = await response.json()
-      const data = arrMovies?.results?.[0]
+      const data = await fetchTmdb(query)
 
       const localPoster = await downloadPoster(data?.poster_path || null)
 
