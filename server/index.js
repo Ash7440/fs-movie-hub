@@ -1,8 +1,10 @@
 const express = require('express')
 const cors = require('cors')
+const morgan = require('morgan')
 const mongoose = require('mongoose')
-require('dotenv').config()
 const path = require('path')
+require('dotenv').config()
+
 const movieRoutes = require('./routes/movieRoutes')
 const logger = require('./utils/logger')
 
@@ -20,6 +22,7 @@ mongoose
   })
 
 app.use(express.json())
+app.use(morgan('dev'))
 
 app.use('/api/movies', movieRoutes)
 
