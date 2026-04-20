@@ -4,11 +4,8 @@ const path = require('path')
 const fs = require('fs')
 
 const logger = require('./logger')
-const movieHelper = require('./movieHelper')
 const conversionEvents = require('./events')
-const Movie = require('../models/movie')
-const downloadPoster = require('./downloadPoster')
-const fetchTmdb = require('../services/tmdbService')
+const { updateStatus, createMovie } = require('../services/movieService')
 
 const moviesDir = path.resolve(__dirname, '../../downloads')
 const outputDir = path.resolve(moviesDir, 'converted')
@@ -108,15 +105,7 @@ const processNext = async () => {
     .on('start', async (cmd) => {
       logger.info('Команда FFmpeg: %s', cmd)
 
-      try {
-        await Movie.findOneAndUpdate(
-          { fileName: fullName}, // Ищем по имени
-          { status: 'processing' }                 
-        )
-        logger.info('Статус в БД обновлен: %s', pureName)
-      } catch (err) {
-        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
-      }
+      await updateStatus(fullName, 'processing')
     })
     .on('progress', async (p) => {
       const percent = Math.round(p.percent || 0)
@@ -140,15 +129,7 @@ const processNext = async () => {
         status: 'done' 
       })
 
-      try {
-        await Movie.findOneAndUpdate(
-          { fileName: fullName },
-          { status: 'ready' }
-        )
-        logger.info('Статус в БД обновлен %s', pureName)
-      } catch (err) {
-        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
-      }
+      await updateStatus(fullName, 'ready')
 
       logger.info('Готово: %s.mp4', pureName)
       isProcessing = false
@@ -162,15 +143,7 @@ const processNext = async () => {
         message: err.message 
       })
 
-      try {
-        await Movie.findOneAndUpdate(
-          { fileName: fullName },
-          { status: 'error' }
-        )
-        logger.info('Статус в БД обновлен: %s', pureName)
-      } catch (err) {
-        logger.error('Ошибка обновления БД: %s', err.message, { stack: err.stack })
-      }
+      await updateStatus(fullName, 'error')
 
       logger.error('Ошибка FFmpeg в файле %s: %s', fileName, err.message, { stack: err.stack })
       isProcessing = false
@@ -210,35 +183,12 @@ watcher.on('add', async (filePath) => {
   logger.info('Новый файл: %s', fileNameWithExt)
 
   try {
-    let movie = await Movie.findOne({ fileName: fileNameWithExt })
+    const movie = await createMovie(fileNameWithExt, pureName)
 
-    if (!movie) {
-      logger.info('Создание записи в БД для: %s', pureName)
-      const query = movieHelper.cleanMovieName(fileNameWithExt)
-
-      const data = await fetchTmdb(query)
-
-      const localPoster = await downloadPoster(data?.poster_path || null)
-
-      movie = new Movie({
-        fileName: fileNameWithExt,
-        title: data?.title || query,
-        tmdbId: data?.id || null,
-        posterPath: data?.poster_path || null,
-        localPosterPath: localPoster || null,
-        overview: data?.overview || 'Описание отсутствует',
-        releaseDate: data?.release_date || null,
-        status: 'processing'
-      })
-
-      await movie.save()
-      logger.info('Запись создана: %s', movie.title)
-
-      conversionEvents.emit('progress', { 
-        type: 'NEW_MOVIE_DETECTED',
-        status: 'new' 
-      })
-    }
+    conversionEvents.emit('progress', { 
+      type: 'NEW_MOVIE_DETECTED',
+      status: 'new' 
+    })
 
     // 2. ДОБАВЛЯЕМ В ОЧЕРЕДЬ КОНВЕРТАЦИИ
     if (!fs.existsSync(targetPath)) {
