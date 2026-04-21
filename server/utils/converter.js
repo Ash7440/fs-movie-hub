@@ -5,6 +5,7 @@ const fs = require('fs')
 
 const logger = require('./logger')
 const conversionEvents = require('./events')
+const { configFFmpeg } = require('./videoHelper')
 const { updateStatus, createMovie } = require('../services/movieService')
 
 const moviesDir = path.resolve(__dirname, '../../downloads')
@@ -75,30 +76,7 @@ const processNext = async () => {
   
   let command = ffmpeg(filePath)
 
-  if ((fileExt === '.mkv' || fileExt === '.mp4') && videoCodecName === 'h264') {
-    logger.info('Прямое копирование видеопотока')
-    command
-      .videoCodec('copy')
-      .audioCodec('aac')
-      .audioChannels(2)
-      .audioBitrate('192k')
-      .outputOptions('-movflags +faststart')
-  } else {
-    logger.info('Перекодирование видеопотока')
-    command
-      .videoCodec('h264_nvenc')
-      .outputOptions([
-        '-preset slow',
-        '-profile:v high',
-        '-rc vbr',
-        '-cq 24',
-        '-gpu 0',
-        '-movflags +faststart'
-      ])
-      .audioCodec('aac')
-      .audioChannels(2)
-      .audioBitrate('192k')
-  }
+  command = await configFFmpeg(command, fileExt, videoCodecName)
 
   command
     .output(targetPath)
@@ -118,7 +96,7 @@ const processNext = async () => {
       process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
 
       if (percent % 25 === 0 && percent !== 0) {
-        logger.info('Конвертация фильма %s: пройден этап %d%%', fileName, percent);
+        logger.info('Конвертация фильма %s: пройден этап %d%%', fileName, percent)
       }
     })
     .on('end', async () => {
