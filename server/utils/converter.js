@@ -5,11 +5,9 @@ const fs = require('fs')
 
 const logger = require('./logger')
 const conversionEvents = require('./events')
+const { moviesDir, outputDir, supportedExtensions } = require('../config/constants')
 const { configFFmpeg } = require('./videoHelper')
 const { updateStatus, createMovie } = require('../services/movieService')
-
-const moviesDir = path.resolve(__dirname, '../../downloads')
-const outputDir = path.resolve(moviesDir, 'converted')
 
 logger.info('Конвертер запущен', { moviesDir, outputDir })
 
@@ -155,7 +153,6 @@ watcher.on('add', async (filePath) => {
   const pureName = path.basename(filePath, fileExt)
   const targetPath = path.join(outputDir, `${pureName}.mp4`)
 
-  const supportedExtensions = ['.mkv', '.avi', '.mov', '.wmv', '.mp4']
   if (!supportedExtensions.includes(fileExt)) return
 
   logger.info('Новый файл: %s', fileNameWithExt)
