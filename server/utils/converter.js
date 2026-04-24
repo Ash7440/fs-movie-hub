@@ -8,17 +8,9 @@ const conversionEvents = require('./events')
 const { moviesDir, outputDir, supportedExtensions } = require('../config/constants')
 const { configFFmpeg } = require('./videoHelper')
 const { updateStatus, createMovie } = require('../services/movieService')
+const { enqueue } = require('../services/queueService')
 
 logger.info('Конвертер запущен', { moviesDir, outputDir })
-
-const getMediaInfo = (filePath) => {
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err) reject(err)
-      else resolve(metadata)
-    })
-  })
-}
 
 // 2. Создаем папку с проверкой ошибок
 try {
@@ -35,97 +27,6 @@ try {
     message: err.message,
     stack: err.stack
   })
-}
-
-let processingQueue = []
-let isProcessing = false
-
-const processNext = async () => {
-  if (processingQueue.length === 0 || isProcessing) return
-  isProcessing = true
-  const { filePath, targetPath, fileName, fileExt } = processingQueue.shift()
-
-  const fullName = fileName + fileExt
-
-  const pureName = path.basename(fileName, path.extname(fileName))
-
-  logger.info('Начата конвертация %s%s', fileName, fileExt)
-
-  let videoCodecName = null
-
-  try {
-    const metadata = await getMediaInfo(filePath)
-    const videoStream = metadata.streams.find(s => s.codec_type === 'video')
-
-    if (videoStream) {
-      videoCodecName = videoStream.codec_name
-      logger.info('Обнаружен видеокодек: %s', videoCodecName)
-    }
-  } catch (err) {
-    logger.error('Ошибка при чтении файла', {
-      filename: fileName,
-      message: err.message,
-      stack: err.stack
-    })
-    isProcessing = false
-    processNext()
-    return
-  }
-  
-  let command = ffmpeg(filePath)
-
-  command = await configFFmpeg(command, fileExt, videoCodecName)
-
-  command
-    .output(targetPath)
-    .on('start', async (cmd) => {
-      logger.info('Команда FFmpeg: %s', cmd)
-
-      await updateStatus(fullName, 'processing')
-    })
-    .on('progress', async (p) => {
-      const percent = Math.round(p.percent || 0)
-        conversionEvents.emit('progress', {
-        fileName: pureName,
-        percent: percent,
-        status: 'processing'
-      })
-
-      process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
-
-      if (percent % 25 === 0 && percent !== 0) {
-        logger.info('Конвертация фильма %s: пройден этап %d%%', fileName, percent)
-      }
-    })
-    .on('end', async () => {
-      process.stdout.write('\n')
-      conversionEvents.emit('progress', { 
-        fileName: pureName, 
-        percent: 100, 
-        status: 'done' 
-      })
-
-      await updateStatus(fullName, 'ready')
-
-      logger.info('Готово: %s.mp4', pureName)
-      isProcessing = false
-      processNext()
-    })
-    .on('error', async (err) => {
-
-      conversionEvents.emit('progress', { 
-        fileName: pureName, 
-        status: 'error',
-        message: err.message 
-      })
-
-      await updateStatus(fullName, 'error')
-
-      logger.error('Ошибка FFmpeg в файле %s: %s', fileName, err.message, { stack: err.stack })
-      isProcessing = false
-      processNext()
-    })
-    .run()
 }
 
 // 3. Настройка Watcher с расширенным логированием
@@ -168,8 +69,7 @@ watcher.on('add', async (filePath) => {
     // 2. ДОБАВЛЯЕМ В ОЧЕРЕДЬ КОНВЕРТАЦИИ
     if (!fs.existsSync(targetPath)) {
       logger.info('В очередь: %s', pureName)
-      processingQueue.push({ filePath, targetPath, fileName: pureName, fileExt })
-      processNext()
+      enqueue({ filePath, targetPath, fileName: pureName, fileExt })
     } else {
       logger.info('Уже сконвертирован: %s', pureName)
       if (movie.status !== 'ready') {
