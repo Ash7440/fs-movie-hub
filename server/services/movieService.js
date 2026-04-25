@@ -1,6 +1,10 @@
+const path = require('path')
+const fs = require('fs').promises
+
 const Movie = require('../models/movie')
 const logger = require('../utils/logger')
 const movieHelper = require('../utils/movieHelper')
+const { moviesDir, outputDir } = require('../config/constants')
 const fetchTmdb = require('./tmdbService')
 const downloadPoster = require('../utils/downloadPoster')
 
@@ -51,7 +55,58 @@ const createMovie = async (fileNameWithExt, pureName) => {
   }
 }
 
+const deleteMovie = async (movieId) => {
+  try {
+    const movie = await Movie.findById(movieId)
+
+    console.log(movie)
+
+    const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
+
+    if (!movie) throw new Error('Movie not found')
+
+    if (movie.status === 'processing') throw new Error('Error, movie in process now')
+
+    const filesToDelete = [
+      path.join(moviesDir, movie.fileName),
+      path.join(outputDir, `${pureName}.mp4`),
+      movie.localPosterPath ? path.join(moviesDir, movie.localPosterPath) : null
+    ].filter(Boolean)
+
+    console.log(filesToDelete)
+
+    for (const filePath of filesToDelete) {
+      console.log(filePath)
+      try {
+        await fs.access(filePath)
+        await fs.unlink(filePath)
+        logger.info('Movie deleted: %s', filePath)
+      } catch (err) {
+        logger.error('File not found, or has already been deleted: %s', err.message, {
+          filePath,
+          stack: err.stack,
+          service: 'movieService/deleteMoie'
+        })
+      }
+    }
+
+    await Movie.findByIdAndUpdate(movieId, { 
+      status: 'deleted',
+      addedAt: Date.now() 
+    })
+
+    return { success: true }
+  } catch (err) {
+    logger.error('Failed to delete movie: %s', err.message, {
+      stack: err.stack,
+      service: 'movieService/deleteMovie'
+    })
+    throw err
+  }
+}
+
 module.exports = {
   updateStatus,
   createMovie,
+  deleteMovie
 }
