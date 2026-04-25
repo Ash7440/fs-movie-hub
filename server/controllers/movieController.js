@@ -4,12 +4,14 @@ const path = require('path')
 
 const Movie = require('../models/movie')
 const conversionEvents = require('../utils/events')
+const { deleteMovie } = require('../services/movieService')
+const logger = require('../utils/logger')
 
 const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
 
 const getMovies = async (req, res) => {
   try {
-    const movies = await Movie.find().sort({ addedAt: -1 })
+    const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
 
     const moviesWithData = movies.map(movie => {
       const movieObj = movie.toObject({ virtuals: true })
@@ -104,4 +106,19 @@ const getStatus = (req, res) => {
   })
 }
 
-module.exports = { getMovies, streamVideo, getStatus }
+const removeMovie = async (req, res) => {
+  try {
+    const movieId = req.params.id
+
+    await deleteMovie(movieId)
+    res.status(204).end()
+  } catch (err) {
+    logger.error('Failed to remove movie: %s', err.message, {
+      stack: err.stack,
+      service: 'movieController/removeMovie'
+    })
+    res.status(404).json({ error: 'Failed to delete movie' })
+  }
+}
+
+module.exports = { getMovies, streamVideo, getStatus, removeMovie }

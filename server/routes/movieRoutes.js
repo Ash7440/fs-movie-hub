@@ -5,4 +5,6 @@ router.get('/', movieController.getMovies)
 router.get('/status', movieController.getStatus)
 router.get('/:filename', movieController.streamVideo)
 
+router.delete('/:id', movieController.removeMovie)
+
 module.exports = router
