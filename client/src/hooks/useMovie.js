@@ -56,5 +56,5 @@ export const useMovies = () => {
     }
   }, [fetchMovies])
     
-  return { movies, conversionProgress, baseUrl }
+  return { movies, conversionProgress, baseUrl, setMovies }
 }
