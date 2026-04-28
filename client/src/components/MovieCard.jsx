@@ -1,21 +1,26 @@
 import { Link } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { MoreVertical, Trash2 } from 'lucide-react'
 
 import './MovieCard.css'
 import { useMovieContext } from '../hooks/useMovieContext'
 import deleteMovie from '../../services/movies'
 
-const MovieCard = ({ movie }) => {
-  const [showMenu, setShowMenu] = useState(false)
+const MovieCard = ({ movie, isMenuOpen, onMenuToggle }) => {
   const { conversionProgress, baseUrl, setMovies } = useMovieContext()
 
+  const toggleMenu = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onMenuToggle(!isMenuOpen)
+  }
+
   useEffect(() => {
-  if (!showMenu) return
-    const closeMenu = () => setShowMenu(false)
+  if (!isMenuOpen) return
+    const closeMenu = () => onMenuToggle(false)
     document.addEventListener('click', closeMenu)
     return () => document.removeEventListener('click', closeMenu)
-  }, [showMenu])
+  }, [isMenuOpen, onMenuToggle])
 
   const handleDelete = async (event) => {
     event.preventDefault()
@@ -32,12 +37,6 @@ const MovieCard = ({ movie }) => {
         console.error('Failed to delete: ', err)
       }
     }
-  }
-
-  const toggleMenu = (event) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setShowMenu(!showMenu)
   }
 
   const pureName = movie.fileName.replace(/\.[^/.]+$/, "")
@@ -128,7 +127,7 @@ const MovieCard = ({ movie }) => {
             </button>
             
             {/* Выпадающий список */}
-            {showMenu && (
+            {isMenuOpen && (
               <div style={{
                 position: 'absolute',
                 right: 0,

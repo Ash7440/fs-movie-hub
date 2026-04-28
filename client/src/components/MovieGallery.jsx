@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import MovieCard from './MovieCard'
 
 const MovieGallery = ({ movies }) => {
+  const [activeMenuId, setActiveMenuId] = useState(null)
 
  return (
     <div style={{
@@ -13,7 +15,12 @@ const MovieGallery = ({ movies }) => {
     }}>
       
       {movies.map((movie) => 
-        <MovieCard key={movie.fileName} movie={movie} />
+        <MovieCard 
+          key={movie.fileName} 
+          movie={movie}
+          isMenuOpen={activeMenuId === movie.id}
+          onMenuToggle={isOpen => setActiveMenuId(isOpen ? movie.id : null)} 
+        />
       )}
     </div>
   )
