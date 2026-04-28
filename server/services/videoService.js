@@ -2,7 +2,7 @@ const ffmpeg = require('fluent-ffmpeg')
 const logger = require('../utils/logger')
 const conversionEvents = require('../utils/events')
 const { configFFmpeg } = require('../utils/videoHelper')
-const { updateStatus } = require('./movieService')
+const { updateStatus, deleteSourceMovie } = require('./movieService')
 
 const getMediaInfo = (filePath) => {
   return new Promise((resolve, reject) => {
@@ -58,8 +58,9 @@ const processVideo = async (job) => {
             status: 'done' 
           })
           await updateStatus(fullName, 'ready')
-
           logger.info('Готово: %s.mp4', pureName)
+
+          await deleteSourceMovie(fullName)
           resolve()
         })
         .on('error', async (err) => {

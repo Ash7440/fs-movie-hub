@@ -59,8 +59,6 @@ const deleteMovie = async (movieId) => {
   try {
     const movie = await Movie.findById(movieId)
 
-    console.log(movie)
-
     const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
 
     if (!movie) throw new Error('Movie not found')
@@ -68,15 +66,12 @@ const deleteMovie = async (movieId) => {
     if (movie.status === 'processing') throw new Error('Error, movie in process now')
 
     const filesToDelete = [
-      path.join(moviesDir, movie.fileName),
+      // path.join(moviesDir, movie.fileName),
       path.join(outputDir, `${pureName}.mp4`),
       movie.localPosterPath ? path.join(moviesDir, movie.localPosterPath) : null
     ].filter(Boolean)
 
-    console.log(filesToDelete)
-
     for (const filePath of filesToDelete) {
-      console.log(filePath)
       try {
         await fs.access(filePath)
         await fs.unlink(filePath)
@@ -105,8 +100,25 @@ const deleteMovie = async (movieId) => {
   }
 }
 
+const deleteSourceMovie = async (filename) => {
+  const filePath = path.join(moviesDir, filename)
+
+  try {
+    await fs.access(filePath)
+    await fs.unlink(filePath)
+    logger.info('Source file was successfully deleted: %s', filePath)
+  } catch (err) {
+    logger.error('Source file not found, or has already been deleted: %s', err, {
+      stack: err.stack,
+      service: 'movieService/deleteSourceMovie'
+    })
+    throw err
+  }
+}
+
 module.exports = {
   updateStatus,
   createMovie,
-  deleteMovie
+  deleteMovie,
+  deleteSourceMovie
 }
