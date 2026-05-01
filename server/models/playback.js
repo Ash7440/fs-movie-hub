@@ -2,7 +2,8 @@ const mongoose = require('mongoose')
 
 const playbackSchema = new mongoose.Schema({
   username: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },
@@ -21,7 +22,7 @@ const playbackSchema = new mongoose.Schema({
   },
   updatedAt: {
     type: Date,
-    default: Date.now()
+    default: Date.now
   }
 })
 
