@@ -15,6 +15,8 @@ const createUser = async (username, password) => {
     
     await user.save()
     logger.info('User "%s" have been created', username)
+
+    return user
   } catch (err) {
     logger.error('Failed to create user: %s', err.message, {
       stack: err.stack,
