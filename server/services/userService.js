@@ -3,6 +3,20 @@ const bcrypt = require('bcrypt')
 const User = require('../models/user')
 const logger = require('../utils/logger')
 
+const fetchUsers = async () => {
+  try {
+    const users = await User.find()
+
+    return users
+  } catch (err) {
+    logger.error('Failed to load users: %s', err.message, {
+      stack: err.stack,
+      service: 'userService/fetchUsers'
+    })
+    throw err
+  }
+}
+
 const createUser = async (username, password) => {
   try {
     const saltRounds = 10
@@ -27,5 +41,6 @@ const createUser = async (username, password) => {
 }
 
 module.exports = {
+  fetchUsers,
   createUser
 }
