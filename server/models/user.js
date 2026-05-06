@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   passwordHash: {
     type: String,
   },
+  avatar: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
