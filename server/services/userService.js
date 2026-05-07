@@ -27,7 +27,14 @@ const fetchUsers = async () => {
   try {
     const users = await User.find()
 
-    return users
+    const usersWithAvatars = users.map(user => {
+      const userObj = user.toObject()
+      userObj.avatarPath = `/avatars/${user.avatar}`
+
+      return userObj
+    })
+
+    return usersWithAvatars
   } catch (err) {
     logger.error('Failed to load users: %s', err.message, {
       stack: err.stack,
