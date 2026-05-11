@@ -1,4 +1,4 @@
-const fetchUsers = async (baseUrl) => {
+export const fetchUsers = async (baseUrl) => {
   const response = await fetch(`${baseUrl}/api/users`)
 
   if (!response.ok) throw new Error('Failed to fetch users')
@@ -6,4 +6,16 @@ const fetchUsers = async (baseUrl) => {
   return await response.json()
 }
 
-export default fetchUsers
+export const registerUser = async (baseUrl, data) => {
+  const response = await fetch(`${baseUrl}/api/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+
+  if (!response.ok) throw new Error('Failed to register user')
+
+  return await response.json()
+}
