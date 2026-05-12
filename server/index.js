@@ -7,6 +7,7 @@ require('dotenv').config()
 
 const movieRoutes = require('./routes/movieRoutes')
 const userRoutes = require('./routes/userRoutes')
+const playbackRoutes = require('./routes/playbackRoutes')
 const logger = require('./utils/logger')
 
 const app = express()
@@ -27,6 +28,7 @@ app.use(morgan('dev'))
 
 app.use('/api/movies', movieRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/playback', playbackRoutes)
 
 require('./utils/converter')
 
