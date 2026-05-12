@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const playbackSchema = new mongoose.Schema({
-  username: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
@@ -26,7 +26,7 @@ const playbackSchema = new mongoose.Schema({
   }
 })
 
-playbackSchema.index({ username: 1, movieId: 1 }, { unique: true })
+playbackSchema.index({ userId: 1, movieId: 1 }, { unique: true })
 
 playbackSchema.set('toJSON', {
   transform: (document, returnedObject) => {

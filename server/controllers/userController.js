@@ -21,7 +21,7 @@ const registerUser = async (req, res) => {
   try {
     const { username, password } = req.body
     
-    if (!username) return res.status(400).json({ error: 'Username and password are required' })
+    if (!username) return res.status(400).json({ error: 'Username is required' })
       
     const user = await createUser(username, password)
 
