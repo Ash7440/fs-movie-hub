@@ -9,6 +9,7 @@ const { moviesDir, outputDir, supportedExtensions } = require('../config/constan
 const { configFFmpeg } = require('./videoHelper')
 const { updateStatus, createMovie } = require('../services/movieService')
 const { enqueue } = require('../services/queueService')
+const { getDuration } = require('../services/videoService')
 
 logger.info('Конвертер запущен', { moviesDir, outputDir })
 
@@ -59,7 +60,9 @@ watcher.on('add', async (filePath) => {
   logger.info('Новый файл: %s', fileNameWithExt)
 
   try {
-    const movie = await createMovie(fileNameWithExt, pureName)
+    const duration = await getDuration(filePath)
+
+    const movie = await createMovie(fileNameWithExt, pureName, duration)
 
     conversionEvents.emit('progress', { 
       type: 'NEW_MOVIE_DETECTED',

@@ -13,6 +13,20 @@ const getMediaInfo = (filePath) => {
   })
 }
 
+const getDuration = async (filePath) => {
+  try {
+    const metadata = await getMediaInfo(filePath)
+
+    return parseFloat(metadata.format.duration) || 0
+  } catch (err) {
+    logger.error('Failed to get duration: %s', err.message, {
+      stack: err.stack,
+      service: 'videoService/getDuration'
+    })
+    return 0
+  }
+}
+
 const processVideo = async (job) => {
   const { filePath, targetPath, fileName, fileExt } = job
   const fullName = fileName + fileExt
@@ -60,7 +74,7 @@ const processVideo = async (job) => {
           await updateStatus(fullName, 'ready')
           logger.info('Готово: %s.mp4', pureName)
 
-          await deleteSourceMovie(fullName)
+          // await deleteSourceMovie(fullName)
           resolve()
         })
         .on('error', async (err) => {
@@ -85,4 +99,7 @@ const processVideo = async (job) => {
   }
 }
 
-module.exports = { processVideo }
+module.exports = { 
+  processVideo, 
+  getDuration 
+}

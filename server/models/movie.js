@@ -12,6 +12,7 @@ const movieSchema = new mongoose.Schema({
   localPosterPath: String,
   overview: String,
   releaseDate: String,
+  duration: Number,
   status: {
     type: String,
     default: null

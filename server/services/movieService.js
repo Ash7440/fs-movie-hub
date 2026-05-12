@@ -20,7 +20,7 @@ const updateStatus = async (fullName, status) => {
   }
 }
 
-const createMovie = async (fileNameWithExt, pureName) => {
+const createMovie = async (fileNameWithExt, pureName, duration) => {
   try {
     let movie = await Movie.findOne({ fileName: fileNameWithExt })
     
@@ -38,6 +38,7 @@ const createMovie = async (fileNameWithExt, pureName) => {
         localPosterPath: localPoster || null,
         overview: data?.overview || 'Описание отсутствует',
         releaseDate: data?.release_date || null,
+        duration: duration || 0,
         status: 'processing'
       })
 
