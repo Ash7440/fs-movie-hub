@@ -1,6 +1,46 @@
+import React, { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 
-const VideoPlayer = ({ movie, baseUrl, theme }) => {
+import { getPlayback, postPlayback } from '../../services/playback'
+
+const VideoPlayer = ({ movie, baseUrl, theme, user }) => {
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const findPlayback = async () => {
+      if (user && movie) {
+        const userId = user._id
+        const movieId = movie._id
+
+        const data = await getPlayback(baseUrl, userId, movieId)
+        if (data && data.timing > 0) {
+          videoRef.current.currentTime = data.timing
+        }
+      }
+    }
+    findPlayback()
+  }, [movie, user, baseUrl])
+
+  const saveProgress = async () => {
+    if (!videoRef.current || !user || !movie) return
+
+    const payload = {
+      userId: user._id,
+      movieId: movie._id,
+      timing: Math.floor(videoRef.current.currentTime)
+    }
+
+    await postPlayback(baseUrl, payload)
+  }
+
+  useEffect(() => {
+    const interval = setInterval(saveProgress, 15000)
+    return () => {
+      clearInterval(interval)
+      saveProgress()
+    }
+  }, [])
+
   if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>
 
   const url = `${baseUrl}/api/movies/${movie.playFile}`
@@ -40,7 +80,13 @@ const VideoPlayer = ({ movie, baseUrl, theme }) => {
         ← Назад к списку
       </Link>
       <div style={styles.videoWrapper}>
-        <video width='100%' controls autoPlay>
+        <video
+          width='100%'
+          controls
+          autoPlay
+          ref={videoRef}
+          onPause={saveProgress}
+        >
           <source src={url} type="video/mp4" />
           Ваш браузер не поддерживает видео-тег.
         </video>
