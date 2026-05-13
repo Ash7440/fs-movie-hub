@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import fetchUsers from '../../services/users'
+import { fetchUsers } from '../../services/users'
 import './UserList.css'
 import { useMovieContext } from '../hooks/useMovieContext'
 
-const UserList = ({ onSelectUser }) => {
+const UserList = ({ onSelectUser, onAddClick }) => {
   const [users, setUsers] = useState([])
 
   const { baseUrl } = useMovieContext()
@@ -37,6 +37,13 @@ const UserList = ({ onSelectUser }) => {
             <span className='user-name'>{user.username}</span>
           </div>
         ))}
+
+        <div className='user-card add-user' onClick={onAddClick}>
+          <div className='avatar-placeholder'>
+            <span style={{ fontSize: '3rem' }}>+</span>
+          </div>
+          <span className='user-name'>Добавить</span>
+        </div>
       </div>
     </div>
   )  
