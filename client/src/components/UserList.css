@@ -61,6 +61,25 @@
   margin: auto; 
 }
 
+.avatar-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  background: #222;
+  border: 2px dashed #444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #444;
+  transition: all 0.2s;
+}
+
+.add-user:hover .avatar-placeholder {
+  border-color: white;
+  color: white;
+  background: #333;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
