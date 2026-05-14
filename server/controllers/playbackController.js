@@ -22,7 +22,7 @@ const getPlayback = async (req, res) => {
 const postPlayback = async (req, res) => {
   try {
     const { userId, movieId, timing } = req.body
-    if (!userId && !movieId && timing) return res.status(400).json({ error: 'Failed to create playback' })
+    if (!userId || !movieId || !timing) return res.status(400).json({ error: 'Missing required fields' })
 
     const playback = await createPlayback(userId, movieId, timing)
     if (!playback) return res.status(400).json({ error: 'Failed to create playback' })
