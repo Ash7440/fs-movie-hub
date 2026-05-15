@@ -1,5 +1,22 @@
-const { fetchPlayback, createPlayback } = require("../services/playbackService")
+const { fetchPlayback, createPlayback, fetchUserAllPlaybacks } = require("../services/playbackService")
 const logger = require("../utils/logger")
+
+const getUserAllPlaybacks = async (req, res) => {
+  try {
+    const userId = req.params.userId
+
+    const playbacks = await fetchUserAllPlaybacks(userId)
+    if (!playbacks) return res.status(404).json({ error: 'Failed to find playbacks' })
+
+    res.status(200).json(playbacks)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get playbacks' })
+    logger.error('Failed to get playbacks: %s', err.message, {
+      stack: err.stack,
+      service: 'playbackController/getUserAllPlaybacks'
+    })
+  }
+}
 
 const getPlayback = async (req, res) => {
   try {
@@ -38,6 +55,7 @@ const postPlayback = async (req, res) => {
 }
 
 module.exports = {
+  getUserAllPlaybacks,
   getPlayback,
   postPlayback
 }

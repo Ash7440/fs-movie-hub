@@ -2,6 +2,20 @@ const Playback = require('../models/playback')
 const Movie = require('../models/movie')
 const logger = require('../utils/logger')
 
+const fetchUserAllPlaybacks = async (userId) => {
+  try {
+    const playbacks = await Playback.find({ userId: userId })
+
+    return playbacks
+  } catch (err) {
+    logger.error('Failed to get all user playbacks: %s', err.message, {
+      stack: err.stack,
+      service: 'playbackService/fetchUserAllPlaybacks'
+    })
+    throw err
+  }
+}
+
 const fetchPlayback = async (userId, movieId) => {
   try {
     const playback = await Playback.findOne({
@@ -15,6 +29,7 @@ const fetchPlayback = async (userId, movieId) => {
       stack: err.stack,
       service: 'playbackServices/getPlayback'
     })
+    throw err
   }
 }
 
@@ -59,6 +74,7 @@ const createPlayback = async (userId, movieId, timing) => {
 }
 
 module.exports = {
+  fetchUserAllPlaybacks,
   fetchPlayback,
   createPlayback
 }
