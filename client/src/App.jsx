@@ -31,18 +31,18 @@ const App = () => {
     document.body.style.fontFamily = theme.fontFamily
 
     const handleClickOutside = (event) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-      setIsDropdownOpen(false)
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false)
+      }
     }
-  }
 
-  if (isDropdownOpen) {
-    document.removeEventListener('mousedown', handleClickOutside)
-  }
+    if (isDropdownOpen) {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
 
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside)
-  }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [isDropdownOpen])
 
   const handleSelectUser = (user) => {

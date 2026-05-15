@@ -6,7 +6,7 @@ import './MovieCard.css'
 import { useMovieContext } from '../hooks/useMovieContext'
 import deleteMovie from '../../services/movies'
 
-const MovieCard = ({ movie, isMenuOpen, onMenuToggle }) => {
+const MovieCard = ({ movie, isMenuOpen, onMenuToggle, userPlaybacks = [] }) => {
   const { conversionProgress, baseUrl, setMovies } = useMovieContext()
 
   const toggleMenu = (event) => {
@@ -44,10 +44,12 @@ const MovieCard = ({ movie, isMenuOpen, onMenuToggle }) => {
   const matchedKey = sseKeys.find(key => 
     pureName === key || pureName.includes(key) || key.includes(pureName)
   )
-
+  
   const livePercent = matchedKey ? conversionProgress[matchedKey] : 0
+  const myPlayback = userPlaybacks.find(p => String(p.movieId) === String(movie.id))
   
   const showAsReady = movie.status === 'ready'
+  const watchPercent = (showAsReady && myPlayback && movie.duration > 0) ? Math.round((myPlayback.timing / movie.duration) * 100) : 0
   const finalIsProcessing = !showAsReady
 
   return (
@@ -72,21 +74,35 @@ const MovieCard = ({ movie, isMenuOpen, onMenuToggle }) => {
             <>
               <div className="shimmer-layer" />
               <div className="progress-overlay">
-                {/* Если процентов еще нет (0), пишем "Waiting", если есть — число */}
                 <span className="percent-text">{livePercent > 0 ? `${livePercent}%` : '...'}</span>
                 <span style={{ fontSize: '0.6rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>
                   Optimizing
                 </span>
               </div>
-              {/* Мини прогресс-бар внизу карточки */}
-              <div className="progress-bar-mini" style={{ width: `${livePercent}%` }} />
             </>
           )}
-          {/* 2. Само изображение */}
+
+          {/* 2. Мини прогресс-бар просмотра (показываем, когда ГОТОВ) */}
+          {showAsReady && watchPercent > 0 && (
+            <div 
+              className="watch-progress-bar" 
+              style={{ 
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: `${watchPercent}%`, 
+                height: '4px',
+                backgroundColor: '#e50914', // Красный цвет
+                zIndex: 10,
+                transition: 'width 0.3s ease'
+              }} 
+            />
+          )}
+
+          {/* 3. Само изображение */}
           <img 
             src={`${baseUrl}${movie.localPosterPath}` || 'https://via.placeholder.com/300x450?text=No+Poster'} 
             alt={movie.title}
-            // Класс меняется строго по нашей новой логике
             className={`poster-img ${finalIsProcessing ? 'is-processing' : 'is-ready'}`}
           />
         </div>
