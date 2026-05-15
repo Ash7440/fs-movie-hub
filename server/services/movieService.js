@@ -8,6 +8,27 @@ const { moviesDir, outputDir } = require('../config/constants')
 const fetchTmdb = require('./tmdbService')
 const downloadPoster = require('../utils/downloadPoster')
 
+const getMovies = async () => {
+  try {
+    const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
+    
+    const moviesWithData = movies.map(movie => {
+      const movieObj = movie.toObject()
+      const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
+      movieObj.playFile = `${pureName}.mp4`
+      return movieObj
+    })
+    
+    return moviesWithData
+  } catch (err) {
+    logger.error('Failed to get movies: %s', err.message, {
+      service: 'movieService/getMovies',
+      stack: err.stack
+    })
+    throw err
+  }
+}
+
 const updateStatus = async (fullName, status) => {
   try {
     await Movie.findOneAndUpdate(
@@ -118,6 +139,7 @@ const deleteSourceMovie = async (filename) => {
 }
 
 module.exports = {
+  getMovies,
   updateStatus,
   createMovie,
   deleteMovie,

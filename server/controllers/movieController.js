@@ -4,26 +4,18 @@ const path = require('path')
 
 const Movie = require('../models/movie')
 const conversionEvents = require('../utils/events')
-const { deleteMovie } = require('../services/movieService')
+const { getMovies, deleteMovie } = require('../services/movieService')
 const logger = require('../utils/logger')
 
 const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
 
 const getMovies = async (req, res) => {
   try {
-    const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
+    const movies = await getMovies()
 
-    const moviesWithData = movies.map(movie => {
-      const movieObj = movie.toObject({ virtuals: true })
-      
-      // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
-      const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
-      movieObj.playFile = `${pureName}.mp4`
+    if (!movies) return res.status(404).json({ error: 'No movies found'})
 
-      return movieObj
-    })
-
-    res.json(moviesWithData)
+    res.json(movies)
   } catch (err) {
     logger.error('Global Error: %s', err, {
       service: 'movieController/getMovies',
