@@ -6,6 +6,14 @@ export const getPlayback = async (baseUrl, userId, movieId) => {
   return await response.json()
 }
 
+export const getAllUserPlaybacks = async (baseUrl, userId) => {
+  const response = await fetch(`${baseUrl}/api/playback/user/${userId}`)
+
+  if (!response.ok) throw new Error('Failed to get all playbacks')
+
+  return await response.json()
+}
+
 export const postPlayback = async (baseUrl, data) => {
   const response = await fetch(`${baseUrl}/api/playback`, {
     method: 'POST',
