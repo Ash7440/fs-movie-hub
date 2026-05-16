@@ -6,7 +6,7 @@ import { getAllUserPlaybacks } from '../../services/playback'
 const MovieGallery = ({ movies }) => {
   const [activeMenuId, setActiveMenuId] = useState(null)
   const [userPlaybacks, setUserPlaybacks] = useState([])
-  const { baseUrl } = useMovieContext()
+  const { baseUrl, fetchMovies } = useMovieContext()
 
   const currentUser = JSON.parse(localStorage.getItem('cinema_user'))
 
@@ -15,8 +15,12 @@ const MovieGallery = ({ movies }) => {
       getAllUserPlaybacks(baseUrl, currentUser._id)
         .then(data => setUserPlaybacks(data))
         .catch(err => console.error("Ошибка обновления таймингов:", err))
+
+      if (fetchMovies) {
+        fetchMovies()
+      }
     }
-  }, [baseUrl])
+  }, [baseUrl, fetchMovies])
 
  return (
     <div style={{

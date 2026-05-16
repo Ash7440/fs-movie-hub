@@ -16,7 +16,7 @@ const theme = {
 }
 
 const App = () => {
-  const { movies, baseUrl } = useMovieContext()
+  const { movies, baseUrl, fetchMovies } = useMovieContext()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -24,6 +24,12 @@ const App = () => {
     const savedUser = localStorage.getItem('cinema_user')
     return savedUser ? JSON.parse(savedUser) : null
   })
+
+  useEffect(() => {
+    if (fetchMovies) {
+      fetchMovies()
+    }
+  }, [currentUser, fetchMovies])
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg

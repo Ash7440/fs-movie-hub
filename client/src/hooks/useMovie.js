@@ -10,7 +10,10 @@ export const useMovies = () => {
 
   const fetchMovies = useCallback(async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/movies`)
+      const savedUser = localStorage.getItem('cinema_user')
+
+      const currentUser = JSON.parse(savedUser)
+      const response = await fetch(`${baseUrl}/api/movies?userId=${currentUser._id}`)
       if (!response.ok) throw new Error('Unable to fetch data')
       const data = await response.json()
       setMovies(data)
@@ -21,8 +24,6 @@ export const useMovies = () => {
   }, [])
   
   useEffect(() => {
-    fetchMovies()
-
     const eventSource = new EventSource(`${baseUrl}/api/movies/status`)
 
     eventSource.onmessage = (event) => {
@@ -56,5 +57,5 @@ export const useMovies = () => {
     }
   }, [fetchMovies])
     
-  return { movies, conversionProgress, baseUrl, setMovies }
+  return { movies, conversionProgress, baseUrl, setMovies, fetchMovies }
 }
