@@ -41,6 +41,7 @@ const processVideo = async (job) => {
 
     return new Promise((resolve, reject) => {
       let command = ffmpeg(filePath)
+      let lastLogged = 0
 
       command = configFFmpeg(command, fileExt, videoCodecName)
 
@@ -60,8 +61,9 @@ const processVideo = async (job) => {
 
           process.stdout.write(`\rЛог: ${fileName} - ${percent}%`)
 
-          if (percent % 25 === 0 && percent !== 0) {
+          if (percent % 25 === 0 && percent !== 0 && percent !== lastLogged) {
             logger.info('Конвертация фильма %s: пройден этап %d%%', fileName, percent)
+            lastLogged = percent
           }
         })
         .on('end', async () => {
