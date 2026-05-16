@@ -1,5 +1,6 @@
 const path = require('path')
 const fs = require('fs').promises
+const mongoose = require('mongoose')
 
 const Movie = require('../models/movie')
 const logger = require('../utils/logger')
@@ -8,15 +9,49 @@ const { moviesDir, outputDir } = require('../config/constants')
 const fetchTmdb = require('./tmdbService')
 const downloadPoster = require('../utils/downloadPoster')
 
-const getMovies = async () => {
+const fetchMovies = async (userId) => {
   try {
-    const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
+    const movies = await Movie.aggregate([
+      { $match: { status: { $ne: 'deleted' } } },
+      {
+        $lookup: {
+          from: 'playbacks',
+          let: { movie_id: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$movieId', '$$movie_id'] },
+                    { $eq: ['$userId', new mongoose.Types.ObjectId(userId)] },
+                    { $gt: ['$timing', 0] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'activeProgress'
+        }
+      },
+      {
+        $addFields: {
+          hasProgress: {
+            $cond: { if: { $gt: [{ $size: '$activeProgress' }, 0] }, then: 1, else: 0 }
+          },
+          id: '$_id'
+        }
+      },
+      { $sort: { hasProgress: -1, addedAt: -1 } },
+      { $project: { hasProgress: 0 } }
+    ])
     
     const moviesWithData = movies.map(movie => {
-      const movieObj = movie.toObject()
       const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
-      movieObj.playFile = `${pureName}.mp4`
-      return movieObj
+
+      return {
+        ...movie,
+        playFile: `${pureName}.mp4`
+      }
     })
     
     return moviesWithData
@@ -32,7 +67,7 @@ const getMovies = async () => {
 const updateStatus = async (fullName, status) => {
   try {
     await Movie.findOneAndUpdate(
-      { fileName: fullName }, // Ищем по имени
+      { fileName: fullName },
       { status: status }                 
     )
     logger.info('Статус в БД обновлен: %s', fullName)
@@ -139,7 +174,7 @@ const deleteSourceMovie = async (filename) => {
 }
 
 module.exports = {
-  getMovies,
+  fetchMovies,
   updateStatus,
   createMovie,
   deleteMovie,

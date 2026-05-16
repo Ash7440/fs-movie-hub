@@ -4,14 +4,15 @@ const path = require('path')
 
 const Movie = require('../models/movie')
 const conversionEvents = require('../utils/events')
-const { getMovies, deleteMovie } = require('../services/movieService')
+const { fetchMovies, deleteMovie } = require('../services/movieService')
 const logger = require('../utils/logger')
 
 const convertedDir = path.join(process.cwd(), '..', process.env.CONVERTED_DIR || 'downloads/converted')
 
 const getMovies = async (req, res) => {
   try {
-    const movies = await getMovies()
+    const { userId } = req.query
+    const movies = await fetchMovies(userId)
 
     if (!movies) return res.status(404).json({ error: 'No movies found'})
 
