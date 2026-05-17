@@ -11,6 +11,11 @@ const downloadPoster = require('../utils/downloadPoster')
 
 const fetchMovies = async (userId) => {
   try {
+    if (!userId) {
+      const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
+      return movies
+    }
+    
     const movies = await Movie.aggregate([
       { $match: { status: { $ne: 'deleted' } } },
       {
