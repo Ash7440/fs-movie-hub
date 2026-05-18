@@ -11,9 +11,9 @@ export const useMovies = () => {
   const fetchMovies = useCallback(async () => {
     try {
       const savedUser = localStorage.getItem('cinema_user')
-
-      const currentUser = JSON.parse(savedUser)
-      const response = await fetch(`${baseUrl}/api/movies?userId=${currentUser._id}`)
+      const currentUser = savedUser ? JSON.parse(savedUser) : null
+      const userId = currentUser && !currentUser.isGuest ? currentUser._id : null
+      const response = await fetch(`${baseUrl}/api/movies?userId=${userId || ''}`)
       if (!response.ok) throw new Error('Unable to fetch data')
       const data = await response.json()
       setMovies(data)

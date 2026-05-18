@@ -68,7 +68,10 @@ const App = () => {
   }
 
   const handleLogout = () => {
-    logoutAction()
+    setIsDropdownOpen(false)
+    const guestUser = { username: 'Guest', isGuest: true }
+    localStorage.setItem('cinema_user', JSON.stringify(guestUser))
+    setCurrentUser(guestUser)
   }
 
   const match = useMatch('/movies/:filename')

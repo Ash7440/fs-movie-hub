@@ -6,23 +6,25 @@ import { getPlayback, postPlayback } from '../../services/playback'
 const VideoPlayer = ({ movie, baseUrl, theme, user }) => {
   const videoRef = useRef(null)
 
-  useEffect(() => {
-    const findPlayback = async () => {
-      if (user && movie) {
-        const userId = user._id
-        const movieId = movie._id
-
-        const data = await getPlayback(baseUrl, userId, movieId)
-        if (data && data.timing > 0) {
-          videoRef.current.currentTime = data.timing
-        }
+  const findPlayback = async () => {
+    if (user.isGuest) return
+    
+    if (user && movie) {
+      const userId = user._id
+      const movieId = movie._id
+      const data = await getPlayback(baseUrl, userId, movieId)
+      if (data && data.timing > 0) {
+        videoRef.current.currentTime = data.timing
       }
     }
+  }
+
+  useEffect(() => {
     findPlayback()
   }, [movie, user, baseUrl])
 
   const saveProgress = async () => {
-    if (!videoRef.current || !user || !movie) return
+    if (!videoRef.current || user.isGuest || !movie) return
 
     const payload = {
       userId: user._id,

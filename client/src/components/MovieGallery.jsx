@@ -11,15 +11,21 @@ const MovieGallery = ({ movies }) => {
   const currentUser = JSON.parse(localStorage.getItem('cinema_user'))
 
   useEffect(() => {
-    if (currentUser && currentUser._id) {
-      getAllUserPlaybacks(baseUrl, currentUser._id)
-        .then(data => setUserPlaybacks(data))
-        .catch(err => console.error("Ошибка обновления таймингов:", err))
+    const getPlaybacks = async () => {
+      if (!currentUser) return
+      
+      if (currentUser && currentUser._id) {
+        const data = await getAllUserPlaybacks(baseUrl, currentUser._id)
+        setUserPlaybacks(data)
 
-      if (fetchMovies) {
-        fetchMovies()
-      }
+        if (!data) return
+
+        if (fetchMovies) {
+          fetchMovies()
+        }
+      }  
     }
+    getPlaybacks()
   }, [baseUrl, fetchMovies])
 
  return (
