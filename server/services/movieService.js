@@ -13,7 +13,17 @@ const fetchMovies = async (userId) => {
   try {
     if (!userId) {
       const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
-      return movies
+      const moviesWithData = movies.map(movie => {
+        const movieObj = movie.toObject({ virtuals: true })
+        
+        // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
+        const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
+        movieObj.playFile = `${pureName}.mp4`
+
+        return movieObj
+      })
+
+      return moviesWithData
     }
     
     const movies = await Movie.aggregate([
