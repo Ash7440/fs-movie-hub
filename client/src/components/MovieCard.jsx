@@ -52,6 +52,10 @@ const MovieCard = ({ movie, isMenuOpen, onMenuToggle, userPlaybacks = [] }) => {
   const watchPercent = (showAsReady && myPlayback && movie.duration > 0) ? Math.round((myPlayback.timing / movie.duration) * 100) : 0
   const finalIsProcessing = !showAsReady
 
+  const posterUrl = movie.localPosterPath 
+  ? `${baseUrl}${movie.localPosterPath}` 
+  : 'https://via.placeholder.com/300x450?text=No+Poster'
+
   return (
     <div style={{ position: 'relative' }}>
       <Link
@@ -101,7 +105,7 @@ const MovieCard = ({ movie, isMenuOpen, onMenuToggle, userPlaybacks = [] }) => {
 
           {/* 3. Само изображение */}
           <img 
-            src={`${baseUrl}${movie.localPosterPath}` || 'https://via.placeholder.com/300x450?text=No+Poster'} 
+            src={posterUrl} 
             alt={movie.title}
             className={`poster-img ${finalIsProcessing ? 'is-processing' : 'is-ready'}`}
           />
