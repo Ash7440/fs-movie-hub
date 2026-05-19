@@ -57,6 +57,17 @@ const App = () => {
     setIsDropdownOpen(false)
   }
 
+  const handleSelectGuest = () => {
+    const guestUser = {
+      username: 'Guest',
+      isGuest: true,
+      avatarPath: '/avatars/Guest_avatar.svg'
+    }
+    setCurrentUser(guestUser)
+    localStorage.setItem('cinema_user', JSON.stringify(guestUser))
+    setIsDropdownOpen(false)
+  }
+
   const logoutAction = () => {
     setCurrentUser(null)
     localStorage.removeItem('cinema_user')
@@ -165,7 +176,7 @@ const App = () => {
 
       {/* Модалка выбора, если user === null */}
       {!currentUser && (
-        <UserSelectorModal isOpen={true} onSelectUser={handleSelectUser} />
+        <UserSelectorModal isOpen={true} onSelectUser={handleSelectUser} onSelectGuest={handleSelectGuest} />
       )}
 
       <header style={headerStyle}>

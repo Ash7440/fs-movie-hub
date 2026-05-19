@@ -3,7 +3,7 @@ import UserList from './userList'
 import RegisterForm from './RegisterForm'
 import { useMovieContext } from '../hooks/useMovieContext'
 
-const UserSelectorModal = ({ onSelectUser }) => {
+const UserSelectorModal = ({ onSelectUser, onSelectGuest }) => {
   const { baseUrl } = useMovieContext()
   const [isRegistering, setIsRegistering] = useState(false)
 
@@ -32,6 +32,7 @@ const UserSelectorModal = ({ onSelectUser }) => {
         ) : (
           <UserList 
             onSelectUser={onSelectUser} 
+            onSelectGuest={onSelectGuest}
             onAddClick={() => setIsRegistering(true)} 
           />
         )}

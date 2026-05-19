@@ -3,7 +3,7 @@ import { fetchUsers } from '../../services/users'
 import './UserList.css'
 import { useMovieContext } from '../hooks/useMovieContext'
 
-const UserList = ({ onSelectUser, onAddClick }) => {
+const UserList = ({ onSelectUser, onSelectGuest, onAddClick }) => {
   const [users, setUsers] = useState([])
 
   const { baseUrl } = useMovieContext()
@@ -37,6 +37,15 @@ const UserList = ({ onSelectUser, onAddClick }) => {
             <span className='user-name'>{user.username}</span>
           </div>
         ))}
+
+        <div className='user-card guest-card' onClick={onSelectGuest}>
+          <img
+            src={`${baseUrl}/avatars/Guest_avatar.svg`}
+            alt='Guest'
+            className='user-avatar'  
+          />
+          <span className='user-name'>Войти как гость</span>
+        </div>
 
         <div className='user-card add-user' onClick={onAddClick}>
           <div className='avatar-placeholder'>
