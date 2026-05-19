@@ -227,7 +227,7 @@ const App = () => {
       </header>
 
       <Routes>
-        <Route path='/' element={<MovieGallery movies={movies} />} />
+        <Route path='/' element={<MovieGallery movies={movies} currentUser={currentUser} />} />
         <Route path='/movies/:filename' element={
           <VideoPlayer movie={movie} baseUrl={baseUrl} theme={theme} user={currentUser} />
         } />

@@ -3,16 +3,19 @@ import MovieCard from './MovieCard'
 import { useMovieContext } from '../hooks/useMovieContext'
 import { getAllUserPlaybacks } from '../../services/playback'
 
-const MovieGallery = ({ movies }) => {
+const MovieGallery = ({ movies, currentUser }) => {
   const [activeMenuId, setActiveMenuId] = useState(null)
   const [userPlaybacks, setUserPlaybacks] = useState([])
   const { baseUrl, fetchMovies } = useMovieContext()
 
-  const currentUser = JSON.parse(localStorage.getItem('cinema_user'))
-
   useEffect(() => {
     const getPlaybacks = async () => {
-      if (!currentUser) return
+      if (!currentUser || currentUser.isGuest) {
+        setUserPlaybacks([])
+        if (fetchMovies) fetchMovies()
+        
+        return
+      } 
       
       if (currentUser && currentUser._id) {
         const data = await getAllUserPlaybacks(baseUrl, currentUser._id)
@@ -26,7 +29,7 @@ const MovieGallery = ({ movies }) => {
       }  
     }
     getPlaybacks()
-  }, [baseUrl, fetchMovies])
+  }, [baseUrl, fetchMovies, currentUser])
 
  return (
     <div style={{
