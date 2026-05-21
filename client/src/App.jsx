@@ -68,21 +68,10 @@ const App = () => {
     setIsDropdownOpen(false)
   }
 
-  const logoutAction = () => {
+  const handleSwitchUser = () => {
     setCurrentUser(null)
     localStorage.removeItem('cinema_user')
     setIsDropdownOpen(false)
-  }
-
-  const handleSwitchUser = () => {
-    logoutAction()
-  }
-
-  const handleLogout = () => {
-    setIsDropdownOpen(false)
-    const guestUser = { username: 'Guest', isGuest: true }
-    localStorage.setItem('cinema_user', JSON.stringify(guestUser))
-    setCurrentUser(guestUser)
   }
 
   const match = useMatch('/movies/:filename')
@@ -189,7 +178,7 @@ const App = () => {
         </div>
 
         {/* ПРАВАЯ ЧАСТЬ: Аватар и Дропдаун */}
-        {currentUser && (
+        {!match && currentUser && (
           <div style={userControlStyle} ref={dropdownRef}>
             <img 
               src={`${baseUrl}${currentUser.avatarPath}`} 
@@ -211,14 +200,6 @@ const App = () => {
                   style={dropdownItemStyles}
                 >
                   Сменить пользователя
-                </button>
-                
-                <button 
-                  onClick={handleLogout}
-                  className="dropdown-item"
-                  style={{...dropdownItemStyles, color: theme.accent, borderTop: '1px solid #333'}}
-                >
-                  Выйти
                 </button>
               </div>
             )}
