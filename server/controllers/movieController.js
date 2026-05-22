@@ -1,5 +1,6 @@
 require('dotenv').config()
 const fsSync = require('fs')
+const fsPromises = require('fs').promises
 const path = require('path')
 
 const Movie = require('../models/movie')
@@ -26,16 +27,18 @@ const getMovies = async (req, res) => {
   }
 }
 
-const streamVideo = (req, res) => {
+const streamVideo = async (req, res) => {
   try {
     const fileName = req.params.filename
     const videoPath = path.join(convertedDir, fileName)
     
-    if (!fsSync.existsSync(videoPath)) {
+    try {
+      await fsPromises.access(videoPath, fsSync.constants.F_OK)
+    } catch (err) {
       return res.status(404).send('film not found')
     }
     
-    const stat = fsSync.statSync(videoPath)
+    const stat = await fsPromises.stat(videoPath)
     const fileSize = stat.size
     const range = req.headers.range
     
