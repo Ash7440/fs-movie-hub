@@ -1,4 +1,4 @@
-const { createUser, fetchUsers } = require("../services/userService")
+const { createUser, fetchUsers, createToken } = require("../services/userService")
 const logger = require("../utils/logger")
 
 const getUsers = async (req, res) => {
@@ -35,7 +35,28 @@ const registerUser = async (req, res) => {
   }
 }
 
+const loginUser = async (req, res) => {
+  try {
+    const { userId, password } = req.body
+    const { token, user } = await createToken(userId, password)
+
+    if (!token || !user) return res.status(401).json({ error: 'Failed to login' })
+
+    res.status(200).json({
+      token,
+      user
+    })
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' })
+    logger.error('Login failed: %s', err.message, {
+      stack: err.stack,
+      service: 'userController/loginUser'
+    })
+  }
+}
+
 module.exports = {
   getUsers,
-  registerUser
+  registerUser,
+  loginUser
 }
