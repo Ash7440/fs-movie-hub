@@ -3,7 +3,7 @@ const logger = require("../utils/logger")
 
 const getUserAllPlaybacks = async (req, res) => {
   try {
-    const userId = req.params.userId
+    const userId = req.user.userId
 
     const playbacks = await fetchUserAllPlaybacks(userId)
     if (!playbacks) return res.status(404).json({ error: 'Failed to find playbacks' })
@@ -20,7 +20,7 @@ const getUserAllPlaybacks = async (req, res) => {
 
 const getPlayback = async (req, res) => {
   try {
-    const userId = req.params.userId
+    const userId = req.user.userId
     const movieId = req.params.movieId
 
     const playback = await fetchPlayback(userId, movieId)
