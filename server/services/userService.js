@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt')
-const { createAvatar } = require('@dicebear/core')
+const jwt = require('jsonwebtoken')
 const { avataaars } = require('@dicebear/collection')
+const { createAvatar } = require('@dicebear/core')
 const fs = require('fs').promises
 const path = require('path')
 
@@ -46,8 +47,12 @@ const fetchUsers = async () => {
 
 const createUser = async (username, password) => {
   try {
-    const saltRounds = 10
-    const passwordHash = await bcrypt.hash(password, saltRounds)
+    let passwordHash = null
+
+    if (password && password.trim() !== '') {
+      const saltRounds = 10
+      passwordHash = await bcrypt.hash(password, saltRounds)
+    }
 
     const avatar = await generateAvatar(username)
     
@@ -70,7 +75,34 @@ const createUser = async (username, password) => {
   }
 }
 
+const createToken = async (userId, password) => {
+  try {
+    const user = await User.findById(userId)
+
+    if (user.passwordHash) {
+      const match = await bcrypt.compare(password, user.passwordHash)
+      if (!match) {
+        return { error: 'Invalid password' }
+      }
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, username: user.username},
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    )
+
+    return ({
+      token,
+      user: { id: user._id, username: user.username, avatar: user.avatar }
+    })
+  } catch (err) {
+    throw err
+  }
+}
+
 module.exports = {
   fetchUsers,
-  createUser
+  createUser,
+  createToken
 }
