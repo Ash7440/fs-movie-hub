@@ -32,7 +32,6 @@ export const useMovies = () => {
         console.log('SSE Update:', data)
 
         if (data.type === 'NEW_MOVIE_DETECTED' || data.status === 'done') {
-          console.log('Пойман сигнал о новом фильме! Перезапрашиваем...')
            fetchMovies()
         }
 

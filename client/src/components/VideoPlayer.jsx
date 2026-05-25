@@ -1,13 +1,19 @@
 import React, { useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useMovieContext } from '../hooks/useMovieContext'
 
 import { getPlayback, postPlayback } from '../../services/playback'
 
-const VideoPlayer = ({ movie, baseUrl, theme, user }) => {
+const VideoPlayer = ({ theme, user }) => {
+  const { filename } = useParams()
+  const { movies, baseUrl } = useMovieContext()
   const videoRef = useRef(null)
 
-  const findPlayback = async () => {
-    if (user.isGuest) return
+  const movie = movies.find(m => m.playFile === filename)
+
+  useEffect(() => {
+    const findPlayback = async () => {
+    if (user.isGuest || !movie) return
     
     if (user && movie) {
       const userId = user._id
@@ -18,8 +24,6 @@ const VideoPlayer = ({ movie, baseUrl, theme, user }) => {
       }
     }
   }
-
-  useEffect(() => {
     findPlayback()
   }, [movie, user, baseUrl])
 
@@ -83,6 +87,7 @@ const VideoPlayer = ({ movie, baseUrl, theme, user }) => {
       </Link>
       <div style={styles.videoWrapper}>
         <video
+          key={movie.id}
           width='100%'
           controls
           autoPlay

@@ -75,7 +75,6 @@ const App = () => {
   }
 
   const match = useMatch('/movies/:filename')
-  const movie = match ? movies.find(m => m.playFile === match.params.filename) : null
 
   const headerStyle = {
     padding: '15px 40px', // Немного компактнее
@@ -210,7 +209,7 @@ const App = () => {
       <Routes>
         <Route path='/' element={<MovieGallery movies={movies} currentUser={currentUser} />} />
         <Route path='/movies/:filename' element={
-          <VideoPlayer movie={movie} baseUrl={baseUrl} theme={theme} user={currentUser} />
+          <VideoPlayer theme={theme} user={currentUser} />
         } />
       </Routes>
     </div>

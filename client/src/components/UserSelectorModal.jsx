@@ -17,7 +17,6 @@ const UserSelectorModal = ({ onSelectUser, onSelectGuest }) => {
 
   const refreshList = () => {
     setIsRegistering(false)
-    window.location.reload()
   }
 
   return (
