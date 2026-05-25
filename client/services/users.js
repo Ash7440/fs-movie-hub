@@ -19,3 +19,17 @@ export const registerUser = async (baseUrl, data) => {
 
   return await response.json()
 }
+
+export const loginUser = async (baseUrl, data) => {
+  const response = await fetch(`${baseUrl}/api/users/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+
+  if (!response.ok) throw new Error('Failed to login')
+
+  return await response.json()
+}
