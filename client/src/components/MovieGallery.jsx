@@ -17,8 +17,8 @@ const MovieGallery = ({ movies, currentUser }) => {
         return
       } 
       
-      if (currentUser && currentUser._id) {
-        const data = await getAllUserPlaybacks(baseUrl, currentUser._id)
+      if (currentUser && currentUser.user.id) {
+        const data = await getAllUserPlaybacks(baseUrl, currentUser.user.id)
         setUserPlaybacks(data)
 
         if (!data) return

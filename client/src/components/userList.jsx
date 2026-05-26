@@ -25,7 +25,7 @@ const UserList = ({ onSelectUser, onSelectGuest, onAddClick }) => {
       <div className='user-grid'>
         {users.map(user => (
           <div
-            key={user._id}
+            key={user.id}
             className='user-card'
             onClick={() => onSelectUser(user)}
           >

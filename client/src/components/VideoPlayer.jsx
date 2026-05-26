@@ -16,7 +16,7 @@ const VideoPlayer = ({ theme, user }) => {
     if (user.isGuest || !movie) return
     
     if (user && movie) {
-      const userId = user._id
+      const userId = user.user.id
       const movieId = movie._id
       const data = await getPlayback(baseUrl, userId, movieId)
       if (data && data.timing > 0) {
@@ -31,7 +31,7 @@ const VideoPlayer = ({ theme, user }) => {
     if (!videoRef.current || user.isGuest || !movie) return
 
     const payload = {
-      userId: user._id,
+      userId: user.user.id,
       movieId: movie._id,
       timing: Math.floor(videoRef.current.currentTime)
     }

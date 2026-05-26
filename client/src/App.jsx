@@ -180,7 +180,7 @@ const App = () => {
         {!match && currentUser && (
           <div style={userControlStyle} ref={dropdownRef}>
             <img 
-              src={`${baseUrl}${currentUser.avatarPath}`} 
+              src={`${baseUrl}${currentUser.user.avatarPath}`} 
               style={avatarButtonStyle} 
               alt="avatar"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Переключаем меню
@@ -190,7 +190,7 @@ const App = () => {
             {isDropdownOpen && (
               <div style={dropdownMenuStyles}>
                 <div style={userInfoHeaderStyle}>
-                  {currentUser.username}
+                  {currentUser.user.username}
                 </div>
                 
                 <button 

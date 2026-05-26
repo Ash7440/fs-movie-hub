@@ -12,7 +12,7 @@ export const useMovies = () => {
     try {
       const savedUser = localStorage.getItem('cinema_user')
       const currentUser = savedUser ? JSON.parse(savedUser) : null
-      const userId = currentUser && !currentUser.isGuest ? currentUser._id : null
+      const userId = currentUser && !currentUser.isGuest ? currentUser.user.id : null
       const response = await fetch(`${baseUrl}/api/movies?userId=${userId || ''}`)
       if (!response.ok) throw new Error('Unable to fetch data')
       const data = await response.json()
