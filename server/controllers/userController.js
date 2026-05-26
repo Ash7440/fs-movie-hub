@@ -37,8 +37,8 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { userId, password } = req.body
-    const { token, user } = await createToken(userId, password)
+    const { username, password } = req.body
+    const { token, user } = await createToken(username, password)
 
     if (!token || !user) return res.status(401).json({ error: 'Failed to login' })
 

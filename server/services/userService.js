@@ -29,7 +29,7 @@ const fetchUsers = async () => {
     const users = await User.find()
 
     const usersWithAvatars = users.map(user => {
-      const userObj = user.toObject()
+      const userObj = user.toJSON()
       userObj.avatarPath = `/avatars/${user.avatar}`
 
       return userObj
@@ -75,9 +75,9 @@ const createUser = async (username, password) => {
   }
 }
 
-const createToken = async (userId, password) => {
+const createToken = async (username, password) => {
   try {
-    const user = await User.findById(userId)
+    const user = await User.findOne({ username })
 
     if (user.passwordHash) {
       const match = await bcrypt.compare(password, user.passwordHash)
@@ -94,7 +94,7 @@ const createToken = async (userId, password) => {
 
     return ({
       token,
-      user: { id: user._id, username: user.username, avatar: user.avatar }
+      user: { id: user._id, username: user.username, avatarPath: `/avatars/${user.avatar}` }
     })
   } catch (err) {
     throw err
