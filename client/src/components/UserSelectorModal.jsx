@@ -1,38 +1,66 @@
 import React, { useState, useEffect } from 'react'
 import UserList from './userList'
 import RegisterForm from './RegisterForm'
+import LoginForm from './LoginForm'
 import { useMovieContext } from '../hooks/useMovieContext'
+import { loginUser } from '../../services/users'
 
 const UserSelectorModal = ({ onSelectUser, onSelectGuest }) => {
   const { baseUrl } = useMovieContext()
-  const [isRegistering, setIsRegistering] = useState(false)
+  const [step, setStep] = useState('list')
+  const [userToLogin, setUserToLogin] = useState(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
 
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
+    return () => { document.body.style.overflow = 'unset' }
   }, [])
 
+  const handleUserClick = async (user) => {
+    if (user.hasPassword) {
+      setUserToLogin(user)
+      setStep('password')
+    } else {
+      const userWithToken = await loginUser(baseUrl, {
+        username: user.username,
+        password: ''
+      })
+      onSelectUser(userWithToken)
+    }
+  }
+
   const refreshList = () => {
-    setIsRegistering(false)
+    setStep('list')
   }
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        {isRegistering ? (
+        {step === 'register' && (
           <RegisterForm 
             baseUrl={baseUrl} 
-            onCancel={() => setIsRegistering(false)} 
+            onCancel={() => setStep('list')} 
             onSuccess={refreshList}
           />
-        ) : (
+        )}
+
+        {step === 'password' && (
+          <LoginForm 
+            baseUrl={baseUrl} 
+            user={userToLogin}
+            onCancel={() => {
+              setStep('list')
+              setUserToLogin(null)
+            }}
+            onSuccess={onSelectUser}
+          />
+        )}
+
+        {step === 'list' && (
           <UserList 
-            onSelectUser={onSelectUser} 
+            onSelectUser={handleUserClick}
             onSelectGuest={onSelectGuest}
-            onAddClick={() => setIsRegistering(true)} 
+            onAddClick={() => setStep('register')} 
           />
         )}
       </div>
