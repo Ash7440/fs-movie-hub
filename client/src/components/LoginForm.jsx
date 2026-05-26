@@ -24,8 +24,6 @@ const LoginForm = ({ baseUrl, user, onCancel, onSuccess }) => {
     }
   }
 
-  console.log(user)
-
   return (
     <div className="register-form" style={{ textAlign: 'center', color: 'white' }}>
       <h2>Вход в профиль</h2>

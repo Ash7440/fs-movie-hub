@@ -59,9 +59,11 @@ const App = () => {
 
   const handleSelectGuest = () => {
     const guestUser = {
-      username: 'Guest',
-      isGuest: true,
-      avatarPath: '/avatars/Guest_avatar.svg'
+      user: {
+        username: 'Guest',
+        isGuest: true,
+        avatarPath: '/avatars/Guest_avatar.svg'
+      }
     }
     setCurrentUser(guestUser)
     localStorage.setItem('cinema_user', JSON.stringify(guestUser))

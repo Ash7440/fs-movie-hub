@@ -13,12 +13,12 @@ const VideoPlayer = ({ theme, user }) => {
 
   useEffect(() => {
     const findPlayback = async () => {
-    if (user.isGuest || !movie) return
+    if (user.user.isGuest || !movie) return
     
     if (user && movie) {
-      const userId = user.user.id
+      const token = user.token
       const movieId = movie._id
-      const data = await getPlayback(baseUrl, userId, movieId)
+      const data = await getPlayback(baseUrl, token, movieId)
       if (data && data.timing > 0) {
         videoRef.current.currentTime = data.timing
       }
@@ -28,7 +28,9 @@ const VideoPlayer = ({ theme, user }) => {
   }, [movie, user, baseUrl])
 
   const saveProgress = async () => {
-    if (!videoRef.current || user.isGuest || !movie) return
+    if (!videoRef.current || user.user.isGuest || !movie) return
+
+    const token = user.token
 
     const payload = {
       userId: user.user.id,
@@ -36,7 +38,7 @@ const VideoPlayer = ({ theme, user }) => {
       timing: Math.floor(videoRef.current.currentTime)
     }
 
-    await postPlayback(baseUrl, payload)
+    await postPlayback(baseUrl, token, payload)
   }
 
   useEffect(() => {
