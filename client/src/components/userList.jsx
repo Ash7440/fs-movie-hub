@@ -10,11 +10,20 @@ const UserList = ({ onSelectUser, onSelectGuest, onAddClick }) => {
 
   useEffect(() => {
     const getUsers = async () => {
-      const usersArr = await fetchUsers(baseUrl)
+      const cachedUsers = localStorage.getItem('cinema_users_list')
+      if (cachedUsers) {
+        setUsers(JSON.parse(cachedUsers))
+      }
 
-      if (!usersArr) return
-
-      setUsers(usersArr)
+      try {
+        const usersArr = await fetchUsers(baseUrl)
+        if (usersArr) {
+          setUsers(usersArr)
+          localStorage.setItem('cinema_users_list', JSON.stringify(usersArr))
+        }
+      } catch (err) {
+        console.error('Error during background user loading', err)
+      }
     }
     getUsers()
   }, [baseUrl])

@@ -32,9 +32,15 @@ app.use('/api/playback', playbackRoutes)
 
 require('./utils/converter')
 
+const ONE_YEAR = 31536000000
+
 app.use(express.static(path.join(__dirname, 'dist')))
 app.use('/posters', express.static(path.join(__dirname, '..', 'downloads', 'posters')))
-app.use('/avatars', express.static(path.join(__dirname, '..', 'downloads', 'avatars')))
+app.use('/avatars', express.static(path.join(__dirname, '..', 'downloads', 'avatars'), {
+  maxAge: ONE_YEAR,
+  immutable: true,
+  fallthrough: false
+}))
 
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
