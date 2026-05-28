@@ -13,10 +13,18 @@ export const useMovies = () => {
       const savedUser = localStorage.getItem('cinema_user')
       const currentUser = savedUser ? JSON.parse(savedUser) : null
       const userId = currentUser && !currentUser.isGuest ? currentUser.user.id : null
+
+      const cachedMovies = localStorage.getItem(`cinema_movies_list_${userId || 'guest'}`)
+      if (cachedMovies) setMovies(JSON.parse(cachedMovies))
+
       const response = await fetch(`${baseUrl}/api/movies?userId=${userId || ''}`)
       if (!response.ok) throw new Error('Unable to fetch data')
+      
       const data = await response.json()
-      setMovies(data)
+
+      setMovies(data)      
+      localStorage.setItem(`cinema_movies_list_${userId || 'guest'}`, JSON.stringify(data))
+
       console.log('Список фильмов успешно обновлен:', data.length, 'шт.')
     } catch (err) {
       console.error('Ошибка загрузки фильмов:', err)
