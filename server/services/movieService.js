@@ -14,7 +14,7 @@ const fetchMovies = async (userId) => {
     if (!userId) {
       const movies = await Movie.find({ status: { $ne: 'deleted' } }).sort({ addedAt: -1 })
       const moviesWithData = movies.map(movie => {
-        const movieObj = movie.toObject({ virtuals: true })
+        const movieObj = movie.toObject()
         
         // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
         const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
@@ -57,7 +57,12 @@ const fetchMovies = async (userId) => {
         }
       },
       { $sort: { hasProgress: -1, addedAt: -1 } },
-      { $project: { hasProgress: 0 } }
+      { $project: { 
+        hasProgress: 0,
+        _id: 0,
+        posterPath: 0,
+        __v: 0
+       } }
     ])
     
     const moviesWithData = movies.map(movie => {
