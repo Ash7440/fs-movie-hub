@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMovieContext } from '../hooks/useMovieContext'
 
 import { getPlayback, postPlayback } from '../../services/playback'
 
 const VideoPlayer = ({ theme, user }) => {
+  const [prevTiming, setPrevTiming] = useState(0)
   const { filename } = useParams()
   const { movies, baseUrl } = useMovieContext()
   const videoRef = useRef(null)
@@ -32,11 +33,16 @@ const VideoPlayer = ({ theme, user }) => {
 
     const token = user.token
 
+    const timing = Math.floor(videoRef.current.currentTime)
+
     const payload = {
       userId: user.user.id,
       movieId: movie.id,
-      timing: Math.floor(videoRef.current.currentTime)
+      timing: timing
     }
+
+    setPrevTiming(timing)
+    if (timing === prevTiming) return
 
     await postPlayback(baseUrl, token, payload)
   }

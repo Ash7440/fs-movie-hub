@@ -24,11 +24,7 @@ export const getAllUserPlaybacks = async (baseUrl, token) => {
   return await response.json()
 }
 
-let prevTiming = 0
-
 export const postPlayback = async (baseUrl, token, data) => {
-  if (data.timing === prevTiming) return
-
   const response = await fetch(`${baseUrl}/api/playback`, {
     method: 'POST',
     headers: {
@@ -37,8 +33,6 @@ export const postPlayback = async (baseUrl, token, data) => {
     },
     body: JSON.stringify(data)
   })
-
-  prevTiming = data.timing
   
   if (!response.ok) throw new Error('Failed to post playback')
 
