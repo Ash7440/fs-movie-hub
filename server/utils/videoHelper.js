@@ -5,21 +5,30 @@ const configFFmpeg = (command, fileExt, videoCodecName) => {
     logger.info('Прямое копирование видеопотока')
     return command
       .videoCodec('copy')
-      .audioCodec('aac')
-      .audioChannels(2)
-      .audioBitrate('192k')
-      .outputOptions('-movflags +faststart')
+      .outputOptions([
+        '-map 0:v:0',
+        '-map 0:a?',
+        '-c:a aac',
+        '-ac 2',
+        '-b:a 192k',
+        '-movflags +faststart'
+      ])
   } else {
     logger.info('Перекодирование видеопотока')
     return command
       .videoCodec('h264_nvenc')
       .outputOptions([
+        '-map 0:v:0',       
+        '-map 0:a?',        
         '-preset slow',
         '-profile:v high',
         '-pix_fmt yuv420p',
         '-rc vbr',
         '-cq 24',
         '-gpu 0',
+        '-c:a aac',         
+        '-ac 2',            
+        '-b:a 192k',        
         '-movflags +faststart'
       ])
       .audioCodec('aac')
