@@ -1,6 +1,12 @@
 const logger = require('./logger')
 
 const configFFmpeg = (command, fileExt, videoCodecName) => {
+  const hlsOptions = [
+    '-hls_time 10',
+    '-hls_list_size 0',
+    '-f hls'
+  ]
+
   if ((fileExt === '.mkv' || fileExt === '.mp4') && videoCodecName === 'h264') {
     logger.info('Прямое копирование видеопотока')
     return command
@@ -11,7 +17,7 @@ const configFFmpeg = (command, fileExt, videoCodecName) => {
         '-c:a aac',
         '-ac 2',
         '-b:a 192k',
-        '-movflags +faststart'
+        ...hlsOptions
       ])
   } else {
     logger.info('Перекодирование видеопотока')
@@ -29,11 +35,8 @@ const configFFmpeg = (command, fileExt, videoCodecName) => {
         '-c:a aac',         
         '-ac 2',            
         '-b:a 192k',        
-        '-movflags +faststart'
+        ...hlsOptions
       ])
-      .audioCodec('aac')
-      .audioChannels(2)
-      .audioBitrate('192k')
   }
 }
 

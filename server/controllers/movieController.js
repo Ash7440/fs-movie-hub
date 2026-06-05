@@ -29,50 +29,29 @@ const getMovies = async (req, res) => {
 
 const streamVideo = async (req, res) => {
   try {
-    const fileName = req.params.filename
-    const videoPath = path.join(convertedDir, fileName)
+    // Теперь нам нужна папка фильма и конкретный файл (index.m3u8 или сегмент .ts)
+    const folderName = req.params.folderName
+    const fileName = req.params.fileName
+    const filePath = path.join(convertedDir, folderName, fileName)
     
     try {
-      await fsPromises.access(videoPath, fsSync.constants.F_OK)
+      await fsPromises.access(filePath, fsSync.constants.F_OK)
     } catch (err) {
-      return res.status(404).send('film not found')
+      return res.status(404).send('File not found')
+    }
+
+    const ext = path.extname(fileName)
+    if (ext === '.m3u8') {
+      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl')
+      res.setHeader('Cache-Control', 'no-cache')
+    } else if (ext === '.ts') {
+      res.setHeader('Content-Type', 'video/mp2t')
+      res.setHeader('Cache-Control', 'public, max-age=3600')
     }
     
-    const stat = await fsPromises.stat(videoPath)
-    const fileSize = stat.size
-    const range = req.headers.range
+    res.status(200)
+    fsSync.createReadStream(filePath).pipe(res)
     
-    if (range) {
-      const parts = range.replace(/bytes=/, '').split('-')
-      const start = parseInt(parts[0], 10)
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
-
-      if (start >= fileSize) {
-        res.status(406).send('value is out of range')
-        return
-      }
-
-      const chunksize = (end - start) + 1
-      const file = fsSync.createReadStream(videoPath, { start, end })
-
-      const head = {
-        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-        'Accept-Ranges': 'bytes',
-        'Content-Length': chunksize,
-        'Content-Type': 'video/mp4',
-      }
-
-      res.writeHead(206, head)
-      file.pipe(res)
-    } else {
-      const head = {
-        'Content-Length': fileSize,
-        'Content-Type': 'video/mp4',
-        'Accept-Ranges': 'bytes',
-      }
-      res.writeHead(200, head)
-      fsSync.createReadStream(videoPath).pipe(res)
-    }
   } catch (err) {
     logger.error('Global Error: %s', err, {
       service: 'movieController/streamVideo',

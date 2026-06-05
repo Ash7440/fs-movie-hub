@@ -1,4 +1,6 @@
 const ffmpeg = require('fluent-ffmpeg')
+const fsPromises = require('fs').promises
+const path = require('path')
 const logger = require('../utils/logger')
 const conversionEvents = require('../utils/events')
 const { configFFmpeg } = require('../utils/videoHelper')
@@ -32,9 +34,16 @@ const processVideo = async (job) => {
   const fullName = fileName + fileExt
   const pureName = fileName
 
-  logger.info('Начата конвертация %s%s', fileName, fileExt)
+  logger.info('Начата HLS конвертация %s%s', fileName, fileExt)
 
   try {
+    const baseConvertedDir = path.dirname(targetPath)
+    const movieOutputDir = path.join(baseConvertedDir, pureName)
+    const m3u8Path = path.join(movieOutputDir, 'index.m3u8')
+
+    // Создаем папку для сегментов фильма
+    await fsPromises.mkdir(movieOutputDir, { recursive: true })
+
     const metadata = await getMediaInfo(filePath)
     const videoStream = metadata.streams.find(s => s.codec_type === 'video')
     const videoCodecName = videoStream ? videoStream.codec_name : null
@@ -46,7 +55,7 @@ const processVideo = async (job) => {
       command = configFFmpeg(command, fileExt, videoCodecName)
 
       command
-        .output(targetPath)
+        .output(m3u8Path) 
         .on('start', async (cmd) => {
           logger.info('Команда FFmpeg: %s', cmd)
           await updateStatus(fullName, 'processing')
@@ -74,7 +83,7 @@ const processVideo = async (job) => {
             status: 'done' 
           })
           await updateStatus(fullName, 'ready')
-          logger.info('Готово: %s.mp4', pureName)
+          logger.info('Готово HLS: %s/index.m3u8', pureName)
 
           // await deleteSourceMovie(fullName)
           resolve()
