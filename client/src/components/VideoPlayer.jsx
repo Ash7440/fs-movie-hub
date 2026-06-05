@@ -1,39 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMovieContext } from '../hooks/useMovieContext'
-
 import { getPlayback, postPlayback } from '../../services/playback'
+import VideoJS from './VideoJS'
 
 const VideoPlayer = ({ theme, user }) => {
   const [prevTiming, setPrevTiming] = useState(0)
   const { filename } = useParams()
   const { movies, baseUrl } = useMovieContext()
-  const videoRef = useRef(null)
+
+  const playerRef = useRef(null) 
 
   const movie = movies.find(m => m.playFile === filename)
 
-  useEffect(() => {
-    const findPlayback = async () => {
-    if (user.user.isGuest || !movie) return
-    
-    if (user && movie) {
-      const token = user.token
-      const movieId = movie.id
-      const data = await getPlayback(baseUrl, token, movieId)
-      if (data && data.timing > 0) {
-        videoRef.current.currentTime = data.timing
-      }
-    }
-  }
-    findPlayback()
-  }, [movie, user, baseUrl])
-
   const saveProgress = async () => {
-    if (!videoRef.current || user.user.isGuest || !movie) return
+    if (!playerRef.current || user.user.isGuest || !movie) return
 
     const token = user.token
-
-    const timing = Math.floor(videoRef.current.currentTime)
+    const timing = Math.floor(playerRef.current.currentTime())
 
     const payload = {
       userId: user.user.id,
@@ -53,12 +37,42 @@ const VideoPlayer = ({ theme, user }) => {
       clearInterval(interval)
       saveProgress()
     }
-  }, [])
+  }, [movie, user, prevTiming])
 
   if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>
 
-  const url = `${baseUrl}/api/movies/${movie.playFile}`
+  const url = `${baseUrl}/api/movies/${movie.playFile}/index.m3u8`
   
+  // Конфиг для Video.js
+  const videoJsOptions = useMemo(() => {
+    return {
+      autoplay: true,
+      controls: true,
+      responsive: true,
+      fluid: true,
+      sources: [{
+        src: url,
+        type: 'application/x-mpegURL'
+      }]
+    }
+  }, [url])
+
+  const handlePlayerReady = async (player) => {
+    playerRef.current = player
+
+    player.on('pause', saveProgress)
+
+    if (!user.user.isGuest && user && movie) {
+      const token = user.token
+      const movieId = movie.id
+      const data = await getPlayback(baseUrl, token, movieId)
+      if (data && data.timing > 0) {
+        // Устанавливаем время воспроизведения через метод .currentTime(секунды)
+        player.currentTime(data.timing)
+      }
+    }
+  }
+
   const styles = {
     container: {
       maxWidth: '1000px',
@@ -94,17 +108,7 @@ const VideoPlayer = ({ theme, user }) => {
         ← Назад к списку
       </Link>
       <div style={styles.videoWrapper}>
-        <video
-          key={movie.id}
-          width='100%'
-          controls
-          autoPlay
-          ref={videoRef}
-          onPause={saveProgress}
-        >
-          <source src={url} type="video/mp4" />
-          Ваш браузер не поддерживает видео-тег.
-        </video>
+        <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
       </div>
       <div style={styles.details}>
         <h1 style={styles.title}>{movie.title}</h1>
