@@ -53,7 +53,7 @@ watcher.on('add', async (filePath) => {
   const fileExt = path.extname(filePath).toLowerCase()
   const fileNameWithExt = path.basename(filePath)
   const pureName = path.basename(filePath, fileExt)
-  const targetPath = path.join(outputDir, `${pureName}.mp4`)
+  const targetPath = path.join(outputDir, pureName)
 
   if (!supportedExtensions.includes(fileExt)) return
 

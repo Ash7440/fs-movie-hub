@@ -18,7 +18,7 @@ const fetchMovies = async (userId) => {
         
         // Берем fileName из базы (например 'Film.mkv'), отрезаем расширение и добавляем .mp4
         const pureName = path.basename(movie.fileName, path.extname(movie.fileName))
-        movieObj.playFile = `${pureName}.mp4`
+        movieObj.playFile = pureName
 
         return movieObj
       })
@@ -70,7 +70,7 @@ const fetchMovies = async (userId) => {
 
       return {
         ...movie,
-        playFile: `${pureName}.mp4`
+        playFile: pureName
       }
     })
     
