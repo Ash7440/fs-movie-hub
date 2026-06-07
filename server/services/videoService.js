@@ -39,20 +39,22 @@ const processVideo = async (job) => {
   try {
     const baseConvertedDir = path.dirname(targetPath)
     const movieOutputDir = path.join(baseConvertedDir, pureName)
-    const m3u8Path = path.join(movieOutputDir, 'index.m3u8')
+    const m3u8Path = path.join(movieOutputDir, 'index_%v.m3u8')
 
     // Создаем папку для сегментов фильма
     await fsPromises.mkdir(movieOutputDir, { recursive: true })
 
     const metadata = await getMediaInfo(filePath)
     const videoStream = metadata.streams.find(s => s.codec_type === 'video')
+
+    const audioStreams = metadata.streams.filter(s => s.codec_type === 'audio')
     const videoCodecName = videoStream ? videoStream.codec_name : null
 
     return new Promise((resolve, reject) => {
       let command = ffmpeg(filePath)
       let lastLogged = 0
 
-      command = configFFmpeg(command, fileExt, videoCodecName)
+      command = configFFmpeg(command, fileExt, videoCodecName, audioStreams)
 
       command
         .output(m3u8Path) 

@@ -29,7 +29,6 @@ const getMovies = async (req, res) => {
 
 const streamVideo = async (req, res) => {
   try {
-    // Теперь нам нужна папка фильма и конкретный файл (index.m3u8 или сегмент .ts)
     const folderName = req.params.folderName
     const fileName = req.params.fileName
     const filePath = path.join(convertedDir, folderName, fileName)
@@ -42,7 +41,7 @@ const streamVideo = async (req, res) => {
 
     const ext = path.extname(fileName)
     if (ext === '.m3u8') {
-      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl')
+      res.setHeader('Content-Type', 'application/x-mpegURL')
       res.setHeader('Cache-Control', 'no-cache')
     } else if (ext === '.ts') {
       res.setHeader('Content-Type', 'video/mp2t')
