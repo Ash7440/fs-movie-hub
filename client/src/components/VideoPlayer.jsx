@@ -50,6 +50,9 @@ const VideoPlayer = ({ theme, user }) => {
       controls: true,
       responsive: true,
       fluid: true,
+      controlBar: {
+        audioTrackButton: true
+      },
       sources: [{
         src: url,
         type: 'application/x-mpegURL'
@@ -67,7 +70,6 @@ const VideoPlayer = ({ theme, user }) => {
       const movieId = movie.id
       const data = await getPlayback(baseUrl, token, movieId)
       if (data && data.timing > 0) {
-        // Устанавливаем время воспроизведения через метод .currentTime(секунды)
         player.currentTime(data.timing)
       }
     }

@@ -16,7 +16,7 @@ export const VideoJS = ({ options, onReady }) => {
         if (onReady) {
           onReady(player)
         }
-      }));
+      }))
     } else {
       const player = playerRef.current
       
