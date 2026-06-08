@@ -56,7 +56,14 @@ const VideoPlayer = ({ theme, user }) => {
       sources: [{
         src: url,
         type: 'application/x-mpegURL'
-      }]
+      }],
+      html5: {
+        vhs: {
+          overrideNative: false
+        },
+        nativeAudioTracks: true,
+        nativeVideoTracks: true
+      }
     }
   }, [url])
 

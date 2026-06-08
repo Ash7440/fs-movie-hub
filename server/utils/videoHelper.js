@@ -6,7 +6,8 @@ const configFFmpeg = (command, fileExt, videoCodecName, audioStreams = []) => {
     '-hls_time 10',
     '-hls_list_size 0',
     '-hls_playlist_type vod',
-    '-master_pl_name index.m3u8'
+    '-master_pl_name index.m3u8',
+    '-hls_flags independent_segments'
   ]
 
   const outputOptions = ['-map 0:v:0']
@@ -38,8 +39,8 @@ const configFFmpeg = (command, fileExt, videoCodecName, audioStreams = []) => {
   outputOptions.push('-var_stream_map', varStreamMap)
 
   if ((fileExt === '.mkv' || fileExt === '.mp4') && videoCodecName === 'h264') {
-    logger.info('Прямое копирование видеопотока')
-    command.videoCodec('copy')
+   logger.info('Прямое копирование видеопотока')
+   command.videoCodec('copy')
   } else {
     logger.info('Перекодирование видеопотока через NVENC')
     command.videoCodec('h264_nvenc').outputOptions([
@@ -48,7 +49,10 @@ const configFFmpeg = (command, fileExt, videoCodecName, audioStreams = []) => {
       '-pix_fmt yuv420p',
       '-rc vbr',
       '-cq 24',
-      '-gpu 0'
+      '-gpu 0',
+      '-g 48',
+      '-keyint_min 48',
+      '-sc_threshold 0'
     ])
   }
 
