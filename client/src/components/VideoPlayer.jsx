@@ -14,10 +14,15 @@ const VideoPlayer = ({ theme, user }) => {
   const movie = movies.find(m => m.playFile === filename)
 
   const saveProgress = async () => {
-    if (!playerRef.current || user.user.isGuest || !movie) return
+    const player = playerRef.current
+    if (!player || user.user.isGuest || !movie) return
+
+    if (player.readyState() === 0) return
 
     const token = user.token
     const timing = Math.floor(playerRef.current.currentTime())
+
+    if (timing === 0 && prevTiming === 0) return
 
     const payload = {
       userId: user.user.id,
@@ -45,7 +50,11 @@ const VideoPlayer = ({ theme, user }) => {
   
   // Конфиг для Video.js
   const videoJsOptions = useMemo(() => {
-    return {
+    const isSmartTV = /Tizen|Web0S|WebOS|SmartTV/i.test(navigator.userAgent)
+    const isApple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const useNative = isSmartTV || isApple
+
+    const options = {
       autoplay: true,
       controls: true,
       responsive: true,
@@ -56,15 +65,18 @@ const VideoPlayer = ({ theme, user }) => {
       sources: [{
         src: url,
         type: 'application/x-mpegURL'
-      }],
-      html5: {
-        vhs: {
-          overrideNative: false
-        },
+      }]
+    }
+
+    if (useNative) {
+      options.html5 = {
+        vhs: { overrideNative: false },
         nativeAudioTracks: true,
         nativeVideoTracks: true
       }
     }
+
+    return options
   }, [url])
 
   const handlePlayerReady = async (player) => {
