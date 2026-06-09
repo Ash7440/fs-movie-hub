@@ -51,7 +51,7 @@ const createPlayback = async (userId, movieId, timing) => {
         isFinished: true,
         updatedAt: Date.now()
       },
-      { upsert: true, new: true })
+      { upsert: true, returnDocument: 'after' })
     }
 
     return await Playback.findOneAndUpdate({
