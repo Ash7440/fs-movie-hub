@@ -63,7 +63,7 @@ const createPlayback = async (userId, movieId, timing) => {
       isFinished: false,
       updatedAt: Date.now()
     },
-    { upsert: true, new: true })
+    { upsert: true, returnDocument: 'after' })
   } catch (err) {
     logger.error('Failed to create playback: %s', err.message, {
       stack: err.stack,
