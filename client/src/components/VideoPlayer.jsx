@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMovieContext } from '../hooks/useMovieContext'
 import { getPlayback, postPlayback } from '../../services/playback'
 import VideoJS from './VideoJS'
 
 const VideoPlayer = ({ theme, user }) => {
-  const [prevTiming, setPrevTiming] = useState(0)
+  const prevTimingRef = useRef(0)
   const { filename } = useParams()
   const { movies, baseUrl } = useMovieContext()
 
@@ -22,16 +22,17 @@ const VideoPlayer = ({ theme, user }) => {
     const token = user.token
     const timing = Math.floor(playerRef.current.currentTime())
 
-    if (timing === 0 && prevTiming === 0) return
+    if (timing === 0 && prevTimingRef.current === 0) return
+
+    if (timing === prevTimingRef.current) return
+
+    prevTimingRef.current = timing
 
     const payload = {
       userId: user.user.id,
       movieId: movie.id,
       timing: timing
     }
-
-    setPrevTiming(timing)
-    if (timing === prevTiming) return
 
     await postPlayback(baseUrl, token, payload)
   }
@@ -42,7 +43,7 @@ const VideoPlayer = ({ theme, user }) => {
       clearInterval(interval)
       saveProgress()
     }
-  }, [movie, user, prevTiming])
+  }, [movie, user])
 
   if (!movie) return <div style={{color: 'white', textAlign: 'center', padding: '50px'}}>Загрузка...</div>
 
