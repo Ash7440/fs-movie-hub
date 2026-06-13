@@ -54,7 +54,7 @@ const processVideo = async (job) => {
       let command = ffmpeg(filePath)
       let lastLogged = 0
 
-      command = configFFmpeg(command, fileExt, videoCodecName, audioStreams)
+      command = configFFmpeg(command, fileExt, videoCodecName, audioStreams, targetPath)
 
       command
         .output(m3u8Path) 
